@@ -6,23 +6,62 @@ try {
     $conn = Database::connect();
 
     // Общее количество проектов
-    $total_projects_result = pg_query($conn, "SELECT COUNT() as count FROM projects");
+    $total_projects_result = pg_query($conn, "SELECT COUNT(*) as count FROM projects");
     $total_projects = pg_fetch_assoc($total_projects_result)['count'];
 
-    // Общая выручка
-    $total_revenue_result = pg_query($conn, "SELECT SUM(revenue) as total FROM projects WHERE revenue IS NOT NULL");
-    $total_revenue = pg_fetch_assoc($total_revenue_result)['total'] ?: 0;
+    // Общая выручка (используем project_revenues если есть, иначе 0)
+    $total_revenue = 0;
+    $revenue_result = pg_query($conn, "
+        SELECT SUM(pr.amount) as total 
+        FROM project_revenues pr 
+        JOIN projects p ON p.id = pr.project_id
+    ");
+    if ($revenue_result) {
+        $revenue_data = pg_fetch_assoc($revenue_result);
+        $total_revenue = $revenue_data['total'] ?: 0;
+    }
 
     // Средняя вероятность
     $avg_probability_result = pg_query($conn, "SELECT AVG(probability) as avg FROM projects WHERE probability IS NOT NULL");
     $avg_probability = round(pg_fetch_assoc($avg_probability_result)['avg'] ?: 0);
 
-    // Проекты по этапам
-    $stages_result = pg_query($conn, "SELECT stage, COUNT() as count FROM projects GROUP BY stage");
+    // Проекты по этапам (stage_id -> нужно получить названия этапов)
+    $stages_result = pg_query($conn, "SELECT stage_id, COUNT(*) as count FROM projects GROUP BY stage_id");
     $stages = pg_fetch_all($stages_result) ?: [];
 
+    // Проекты по менеджерам
+    $managers_result = pg_query($conn, "
+        SELECT manager_id, COUNT(*) as count 
+        FROM projects 
+        WHERE manager_id IS NOT NULL 
+        GROUP BY manager_id
+    ");
+    $managers = pg_fetch_all($managers_result) ?: [];
+
+    // Проекты по годам реализации
+    $years_result = pg_query($conn, "
+        SELECT implementation_year, COUNT(*) as count 
+        FROM projects 
+        WHERE implementation_year IS NOT NULL 
+        GROUP BY implementation_year 
+        ORDER BY implementation_year
+    ");
+    $years = pg_fetch_all($years_result) ?: [];
+
     // Последние проекты для таблицы
-    $recent_projects_result = pg_query($conn, "SELECT * FROM projects ORDER BY created_at DESC LIMIT 10");
+    $recent_projects_result = pg_query($conn, "
+        SELECT 
+            id,
+            organization_name,
+            project_name,
+            stage_id,
+            probability,
+            implementation_year,
+            creation_date
+        FROM projects 
+        ORDER BY created_at DESC 
+        LIMIT 10
+    ");
     $recent_projects = pg_fetch_all($recent_projects_result) ?: [];
 
 } catch (Exception $e) {
