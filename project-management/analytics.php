@@ -1,10 +1,15 @@
 <?php
 require_once 'database.php';
+require_once 'session.php';
+require_once 'auth.php';
+
+Auth::requireAuth();
 
 // Получаем данные из БД для аналитики
 try {
     $conn = Database::connect();
 
+<<<<<<< HEAD
     // Общее количество проектов
     $total_projects_result = pg_query($conn, "SELECT COUNT(*) as count FROM projects");
     $total_projects = pg_fetch_assoc($total_projects_result)['count'];
@@ -62,10 +67,111 @@ try {
         ORDER BY created_at DESC 
         LIMIT 10
     ");
+=======
+    // Основные метрики
+    $stats_query = "
+        SELECT 
+            COUNT(*) as total_projects,
+            COUNT(CASE WHEN stage_id NOT IN (SELECT id FROM dictionaries WHERE name LIKE '%Успех%') THEN 1 END) as active_projects,
+            COUNT(CASE WHEN DATE_TRUNC('month', creation_date) = DATE_TRUNC('month', CURRENT_DATE) THEN 1 END) as new_this_month,
+            COALESCE(SUM((SELECT SUM(amount) FROM project_revenues pr WHERE pr.project_id = p.id)), 0) as total_revenue,
+            AVG(probability) as avg_probability,
+            COUNT(CASE WHEN stage_id IN (SELECT id FROM dictionaries WHERE name LIKE '%Успех%') THEN 1 END) as completed_projects
+        FROM projects p
+    ";
+    $stats_result = pg_query($conn, $stats_query);
+    $stats = pg_fetch_assoc($stats_result);
+
+    // Проекты по этапам
+    $stages_query = "
+        SELECT d.name as stage_name, COUNT(p.id) as project_count,
+               ROUND(COALESCE(AVG(p.probability), 0) * 100) as avg_probability_percent,
+               COALESCE(SUM(pr.amount), 0) as total_revenue
+        FROM dictionaries d
+        LEFT JOIN projects p ON d.id = p.stage_id AND d.type = 'stage'
+        LEFT JOIN project_revenues pr ON p.id = pr.project_id
+        WHERE d.type = 'stage'
+        GROUP BY d.id, d.name, d.sort_order
+        ORDER BY d.sort_order
+    ";
+    $stages_result = pg_query($conn, $stages_query);
+    $stages = pg_fetch_all($stages_result) ?: [];
+
+    // Выручка по услугам
+    $services_query = "
+        SELECT d.name as service_name, 
+               COALESCE(SUM(pr.amount), 0) as total_revenue,
+               COUNT(p.id) as project_count,
+               ROUND(COALESCE(AVG(p.probability), 0) * 100) as avg_probability
+        FROM dictionaries d
+        LEFT JOIN projects p ON d.id = p.service_id AND d.type = 'service'
+        LEFT JOIN project_revenues pr ON p.id = pr.project_id
+        WHERE d.type = 'service'
+        GROUP BY d.id, d.name
+        ORDER BY total_revenue DESC
+    ";
+    $services_result = pg_query($conn, $services_query);
+    $services = pg_fetch_all($services_result) ?: [];
+
+    // Эффективность менеджеров
+    $managers_query = "
+        SELECT u.full_name as manager_name,
+               COUNT(p.id) as project_count,
+               COALESCE(SUM(pr.amount), 0) as total_revenue,
+               ROUND(COALESCE(AVG(p.probability), 0) * 100) as avg_probability,
+               COUNT(CASE WHEN p.stage_id IN (SELECT id FROM dictionaries WHERE name LIKE '%Успех%') THEN 1 END) as completed_projects
+        FROM users u
+        LEFT JOIN projects p ON u.id = p.manager_id
+        LEFT JOIN project_revenues pr ON p.id = pr.project_id
+        WHERE u.is_active = true
+        GROUP BY u.id, u.full_name
+        HAVING COUNT(p.id) > 0
+        ORDER BY total_revenue DESC
+        LIMIT 10
+    ";
+    $managers_result = pg_query($conn, $managers_query);
+    $managers = pg_fetch_all($managers_result) ?: [];
+
+    // Динамика по месяцам
+    $monthly_query = "
+        SELECT 
+            DATE_TRUNC('month', p.creation_date) as month,
+            COUNT(p.id) as new_projects,
+            COALESCE(SUM(pr.amount), 0) as monthly_revenue
+        FROM projects p
+        LEFT JOIN project_revenues pr ON p.id = pr.project_id 
+            AND EXTRACT(YEAR FROM p.creation_date) = pr.year 
+            AND EXTRACT(MONTH FROM p.creation_date) = pr.month
+        WHERE p.creation_date >= CURRENT_DATE - INTERVAL '6 months'
+        GROUP BY DATE_TRUNC('month', p.creation_date)
+        ORDER BY month DESC
+        LIMIT 6
+    ";
+    $monthly_result = pg_query($conn, $monthly_query);
+    $monthly_data = pg_fetch_all($monthly_result) ?: [];
+
+    // Последние проекты для таблицы
+    $recent_projects_query = "
+        SELECT p.*, 
+               d_stage.name as stage_name,
+               d_service.name as service_name,
+               u.full_name as manager_name,
+               (SELECT SUM(amount) FROM project_revenues pr WHERE pr.project_id = p.id) as total_revenue
+        FROM projects p
+        LEFT JOIN dictionaries d_stage ON p.stage_id = d_stage.id
+        LEFT JOIN dictionaries d_service ON p.service_id = d_service.id
+        LEFT JOIN users u ON p.manager_id = u.id
+        ORDER BY p.updated_at DESC
+        LIMIT 10
+    ";
+    $recent_projects_result = pg_query($conn, $recent_projects_query);
+>>>>>>> cee8816 (gesrg)
     $recent_projects = pg_fetch_all($recent_projects_result) ?: [];
 
 } catch (Exception $e) {
-    $error = "Ошибка загрузки данных: " . $e->getMessage();
+    error_log("Analytics data loading error: " . $e->getMessage());
+    $stats = [];
+    $stages = $services = $managers = $monthly_data = $recent_projects = [];
 }
 ?>
 
@@ -77,265 +183,93 @@ try {
     <title>Аналитика - Ростелеком</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .analytics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .analytics-card {
-            background: white;
-            border-radius: var(--radius);
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            height: 400px;
-        }
-
         .analytics-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 0;
         }
 
-        .analytics-title {
-            font-weight: 600;
-            color: var(--dark);
-            font-size: 1.25rem;
-        }
-
-        .analytics-filters {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .chart-container {
-            height: 320px;
-            background: var(--light);
-            border-radius: var(--radius);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .chart-placeholder {
-            text-align: center;
-            color: var(--gray);
-        }
-
-        .chart-placeholder .icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        .kpi-grid {
+        .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
-            margin-bottom: 2rem;
+            margin: 2rem 0;
         }
 
-        .kpi-card {
+        .metric-card {
             background: white;
-            border-radius: var(--radius);
             padding: 1.5rem;
-            box-shadow: var(--shadow);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             text-align: center;
         }
 
-        .kpi-value {
+        .metric-value {
             font-size: 2rem;
             font-weight: 700;
             color: var(--primary);
-            margin-bottom: 0.5rem;
+            margin: 0.5rem 0;
         }
 
-        .kpi-label {
+        .metric-label {
             color: var(--gray);
-            font-weight: 500;
+            font-size: 0.9rem;
         }
 
-        .kpi-change {
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
         }
 
-        .kpi-positive {
-            color: var(--success);
+        .chart-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
-        .kpi-negative {
-            color: var(--danger);
-        }
-
-        .stage-timeline {
-            margin-top: 2rem;
-        }
-
-        .stage-item {
-            display: flex;
-            align-items: center;
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
             margin-bottom: 1rem;
-            padding: 1rem;
-            background: var(--light);
-            border-radius: var(--radius);
-        }
-
-        .stage-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 1rem;
-        }
-
-        .stage-info {
-            flex: 1;
-        }
-
-        .stage-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .stage-name {
-            font-weight: 500;
             color: var(--dark);
         }
 
-        .stage-count {
-            color: var(--gray);
-            font-size: 0.875rem;
-        }
-
-        .stage-progress {
-            height: 6px;
-            background: #e5e7eb;
-            border-radius: 3px;
+        .table-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             overflow: hidden;
         }
 
-        .stage-progress-fill {
-            height: 100%;
-            border-radius: 3px;
-        }
-
-        .export-section {
-            background: white;
-            border-radius: var(--radius);
-            padding: 2rem;
-            box-shadow: var(--shadow);
-            margin-top: 2rem;
-        }
-
-        .export-options {
-            display: flex;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
-            align-items: center;
-            flex-wrap: wrap;
+            margin: 1.5rem 0;
         }
 
-        .export-format {
+        .stat-item {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .export-format.active {
-            border-color: var(--primary);
-            background: #f7f0ff;
-        }
-
-        .export-format input {
-            display: none;
-        }
-
-        .time-filters {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .time-filter {
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--gray-light);
-            border-radius: var(--radius);
-            background: white;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .time-filter.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        .comparison-card {
-            grid-column: 1 / -1;
-        }
-
-        .comparison-chart {
-            height: 350px;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        .data-table th,
-        .data-table td {
             padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid var(--gray-light);
+            background: var(--light);
+            border-radius: 8px;
         }
 
-        .data-table th {
-            background: var(--light);
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
             font-weight: 600;
             color: var(--dark);
-        }
-
-        .trend-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            font-size: 0.875rem;
-        }
-
-        @media (max-width: 768px) {
-            .analytics-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .analytics-card {
-                height: auto;
-                min-height: 300px;
-            }
-            
-            .analytics-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-            
-            .export-options {
-                flex-direction: column;
-                align-items: flex-start;
-            }
         }
     </style>
 </head>
@@ -343,453 +277,258 @@ try {
     <!-- Header -->
     <?php require_once 'blocks/head.php'; ?>
 
-    <!-- Page Header -->
-    <section class="page-header">
+    <!-- Analytics Header -->
+    <section class="analytics-header">
         <div class="container">
             <div class="page-header-content">
                 <h1>Аналитика проектов</h1>
-                <p>Глубокий анализ данных по проектам коммерческого подразделения</p>
+                <p>Обзор ключевых метрик и показателей эффективности</p>
             </div>
         </div>
     </section>
 
-    <!-- Analytics Content -->
-    <section class="dashboard">
+    <!-- Main Analytics Content -->
+    <section class="analytics-content">
         <div class="container">
-            <!-- Фильтры по времени -->
-            <div class="time-filters">
-                <button class="time-filter active">Сегодня</button>
-                <button class="time-filter">Неделя</button>
-                <button class="time-filter">Месяц</button>
-                <button class="time-filter">Квартал</button>
-                <button class="time-filter">Год</button>
-                <button class="time-filter">Все время</button>
-            </div>
-
-            <?php if (isset($error)): ?>
-            <div style="background: #fee; color: #c00; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
-        <?php echo $error; ?>
-    </div>
-<?php endif; ?>
-
-            <!-- KPI показатели -->
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-value"><?php echo $total_projects ?? '0'; ?></div>
-                    <div class="kpi-label">Всего проектов</div>
-                    <div class="kpi-change kpi-positive">
-                        <span class="trend-indicator">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M18 15L12 9L6 15" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                            +12%
-                        </span>
-                    </div>
+            <!-- Key Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value"><?= $stats['total_projects'] ?? 0 ?></div>
+                    <div class="metric-label">Всего проектов</div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-value">₽<?php echo number_format(($total_revenue ?? 0) / 1000000, 1); ?>М</div>
-                    <div class="kpi-label">Общая выручка</div>
-                    <div class="kpi-change kpi-positive">
-                        <span class="trend-indicator">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M18 15L12 9L6 15" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                            +8%
-                        </span>
-                    </div>
+                <div class="metric-card">
+                    <div class="metric-value"><?= $stats['active_projects'] ?? 0 ?></div>
+                    <div class="metric-label">Активных проектов</div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-value"><?php echo $avg_probability ?? '0'; ?>%</div>
-                    <div class="kpi-label">Средняя вероятность</div>
-                    <div class="kpi-change kpi-negative">
-                        <span class="trend-indicator">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                            -2%
-                        </span>
-                    </div>
+                <div class="metric-card">
+                    <div class="metric-value"><?= number_format($stats['total_revenue'] ?? 0, 0, ',', ' ') ?> ₽</div>
+                    <div class="metric-label">Общая выручка</div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-value">18 дн.</div>
-                    <div class="kpi-label">Среднее время на этапе</div>
-                    <div class="kpi-change kpi-positive">
-                        <span class="trend-indicator">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M18 15L12 9L6 15" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                            -3 дн.
-                        </span>
-                    </div>
+                <div class="metric-card">
+                    <div class="metric-value"><?= round(($stats['avg_probability'] ?? 0) * 100) ?>%</div>
+                    <div class="metric-label">Средняя вероятность</div>
                 </div>
             </div>
 
-            <!-- Основные графики -->
-            <div class="analytics-grid">
-                <!-- Динамика проектов по этапам -->
-                <div class="analytics-card">
-                    <div class="analytics-header">
-                        <h3 class="analytics-title">Динамика проектов по этапам</h3>
-                        <div class="analytics-filters">
-                            <select>
-                                <option>Последние 6 месяцев</option>
-                                <option>Последний год</option>
-                                <option>Все время</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-placeholder">
-                            <div class="icon">📊</div>
-                            <div>График динамики проектов по этапам</div>
-                            <div style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.7;">
-                                Линейный график с трендами по каждому этапу
-                            </div>
-                        </div>
-                    </div>
+            <!-- Charts Row 1 -->
+            <div class="chart-grid">
+                <!-- Projects by Stage -->
+                <div class="chart-card">
+                    <div class="chart-title">Проекты по этапам</div>
+                    <canvas id="stagesChart" height="250"></canvas>
                 </div>
 
-                <!-- Распределение по услугам -->
-                <div class="analytics-card">
-                    <div class="analytics-header">
-                        <h3 class="analytics-title">Распределение по услугам</h3>
-                        <div class="analytics-filters">
-                            <select>
-                                <option>Текущий месяц</option>
-                                <option>Квартал</option>
-                                <option>Год</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-placeholder">
-                            <div class="icon">🥧</div>
-                            <div>Круговая диаграмма распределения</div>
-                            <div style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.7;">
-                                Доля проектов по типам услуг
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Эффективность менеджеров -->
-                <div class="analytics-card">
-                    <div class="analytics-header">
-                        <h3 class="analytics-title">Эффективность менеджеров</h3>
-                        <div class="analytics-filters">
-                            <select>
-                                <option>По количеству проектов</option>
-                                <option>По выручке</option>
-                                <option>По вероятности</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-placeholder">
-                            <div class="icon">👥</div>
-                            <div>Гистограмма эффективности</div>
-                            <div style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.7;">
-                                Сравнение показателей менеджеров
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Воронка продаж -->
-                <div class="analytics-card">
-                    <div class="analytics-header">
-                        <h3 class="analytics-title">Воронка проектов</h3>
-                        <div class="analytics-filters">
-                            <select>
-                                <option>Текущий месяц</option>
-                                <option>Квартал</option>
-                                <option>Год</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-placeholder">
-                            <div class="icon">🔄</div>
-                            <div>Воронка продаж проектов</div>
-                            <div style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.7;">
-                                Конверсия между этапами проекта
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Сравнительный анализ -->
-                <div class="analytics-card comparison-card">
-                    <div class="analytics-header">
-                        <h3 class="analytics-title">Сравнительный анализ по сегментам</h3>
-                        <div class="analytics-filters">
-                            <select>
-                                <option>По выручке</option>
-                                <option>По количеству проектов</option>
-                                <option>По средней вероятности</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="chart-container comparison-chart">
-                        <div class="chart-placeholder">
-                            <div class="icon">⚖️</div>
-                            <div>Сравнительная диаграмма по сегментам</div>
-                            <div style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.7;">
-                                Сравнение показателей между сегментами бизнеса
-                            </div>
-                        </div>
-                    </div>
+                <!-- Revenue by Service -->
+                <div class="chart-card">
+                    <div class="chart-title">Выручка по услугам</div>
+                    <canvas id="servicesChart" height="250"></canvas>
                 </div>
             </div>
 
-            <!-- Детальная аналитика по этапам -->
-            <div class="analytics-card">
-                <div class="analytics-header">
-                    <h3 class="analytics-title">Детальная аналитика по этапам проекта</h3>
-                    <div class="analytics-filters">
-                        <select>
-                            <option>Все услуги</option>
-                            <option>Интернет</option>
-                            <option>Телефония</option>
-                            <option>Инфобез</option>
-                        </select>
-                    </div>
+            <!-- Charts Row 2 -->
+            <div class="chart-grid">
+                <!-- Manager Performance -->
+                <div class="chart-card">
+                    <div class="chart-title">Топ-10 менеджеров по выручке</div>
+                    <canvas id="managersChart" height="300"></canvas>
                 </div>
-                <div class="stage-timeline">
-                    <div class="stage-item">
-                        <div class="stage-color" style="background: #7700FF;"></div>
-                        <div class="stage-info">
-                            <div class="stage-header">
-                                <span class="stage-name">1. Лид</span>
-                                <span class="stage-count">24 проекта</span>
-                            </div>
-                            <div class="stage-progress">
-                                <div class="stage-progress-fill" style="width: 17%; background: #7700FF;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="stage-item">
-                        <div class="stage-color" style="background: #9D4EDD;"></div>
-                        <div class="stage-info">
-                            <div class="stage-header">
-                                <span class="stage-name">2. Проработка лида</span>
-                                <span class="stage-count">18 проектов</span>
-                            </div>
-                            <div class="stage-progress">
-                                <div class="stage-progress-fill" style="width: 75%; background: #9D4EDD;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="stage-item">
-                        <div class="stage-color" style="background: #C77DFF;"></div>
-                        <div class="stage-info">
-                            <div class="stage-header">
-                                <span class="stage-name">3. КП</span>
-                                <span class="stage-count">32 проекта</span>
-                            </div>
-                            <div class="stage-progress">
-                                <div class="stage-progress-fill" style="width: 42%; background: #C77DFF;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="stage-item">
-                        <div class="stage-color" style="background: #E0AAFF;"></div>
-                        <div class="stage-info">
-                            <div class="stage-header">
-                                <span class="stage-name">4. Пилот</span>
-                                <span class="stage-count">8 проектов</span>
-                            </div>
-                            <div class="stage-progress">
-                                <div class="stage-progress-fill" style="width: 60%; background: #E0AAFF;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="stage-item">
-                        <div class="stage-color" style="background: #5A189A;"></div>
-                        <div class="stage-info">
-                            <div class="stage-header">
-                                <span class="stage-name">10. Успех</span>
-                                <span class="stage-count">45 проектов</span>
-                            </div>
-                            <div class="stage-progress">
-                                <div class="stage-progress-fill" style="width: 100%; background: #5A189A;"></div>
-                            </div>
-                        </div>
-                    </div>
+
+                <!-- Monthly Dynamics -->
+                <div class="chart-card">
+                    <div class="chart-title">Динамика за 6 месяцев</div>
+                    <canvas id="monthlyChart" height="300"></canvas>
                 </div>
             </div>
 
-            <!-- Таблица детальных данных -->
-            <div class="analytics-card">
-                <div class="analytics-header">
-                    <h3 class="analytics-title">Детальные данные по проектам</h3>
-                    <div class="analytics-filters">
-                        <button class="btn btn-secondary">Фильтры</button>
-                        <button class="btn btn-primary" onclick="location.href='reports.php'">Экспорт</button>
-                    </div>
+            <!-- Recent Projects -->
+            <div class="table-card" style="margin-top: 2rem;">
+                <div class="table-header">
+                    <h3>Последние проекты</h3>
                 </div>
-                <div class="table-responsive">
+                <div class="table-container">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Проект</th>
+                                <th>Организация</th>
                                 <th>Услуга</th>
+                                <th>Менеджер</th>
                                 <th>Этап</th>
                                 <th>Вероятность</th>
                                 <th>Выручка</th>
-                                <th>Менеджер</th>
-                                <th>Длительность</th>
-                                <th>Тренд</th>
                             </tr>
                         </thead>
                         <tbody>
-    <?php if (!empty($recent_projects)): ?>
-        <?php foreach ($recent_projects as $project): ?>
-            <tr>
-                <td><?php echo htmlspecialchars($project['name'] ?? 'Без названия'); ?></td>
-                <td><?php echo htmlspecialchars($project['service_type'] ?? 'Не указано'); ?></td>
-                <td><?php echo htmlspecialchars($project['stage'] ?? 'Не указан'); ?></td>
-                <td><?php echo ($project['probability'] ?? 0); ?>%</td>
-                <td>₽<?php echo number_format($project['revenue'] ?? 0); ?></td>
-                <td><?php echo htmlspecialchars($project['manager'] ?? 'Не назначен'); ?></td>
-                <td><?php echo $project['duration'] ?? '0'; ?> дн.</td>
-                <td>
-                    <span class="trend-indicator kpi-positive">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 15L12 9L6 15" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </span>
-                </td>
-            </tr>
-        <?php endforeach; ?>
-    <?php else: ?>
-        <tr>
-            <td colspan="8" style="text-align: center; color: #666;">
-                Нет данных о проектах в базе данных
-            </td>
-        </tr>
-    <?php endif; ?>
-</tbody>
+                            <?php foreach ($recent_projects as $project): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($project['project_name']) ?></td>
+                                <td><?= htmlspecialchars($project['organization_name']) ?></td>
+                                <td><?= htmlspecialchars($project['service_name']) ?></td>
+                                <td><?= htmlspecialchars($project['manager_name']) ?></td>
+                                <td>
+                                    <span class="status-badge"><?= htmlspecialchars($project['stage_name']) ?></span>
+                                </td>
+                                <td>
+                                    <div class="progress-bar small">
+                                        <div class="progress-fill" style="width: <?= round($project['probability'] * 100) ?>%"></div>
+                                    </div>
+                                    <span style="font-size: 0.8rem;"><?= round($project['probability'] * 100) ?>%</span>
+                                </td>
+                                <td><?= number_format($project['total_revenue'] ?? 0, 0, ',', ' ') ?> ₽</td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
                     </table>
-                </div>
-            </div>
-
-            <!-- Секция экспорта -->
-            <div class="export-section">
-                <h3>Экспорт аналитических данных</h3>
-                <p>Выберите формат для экспорта данных аналитики</p>
-                
-                <div class="export-options">
-                    <label class="export-format active">
-                        <input type="radio" name="export-format" checked>
-                        <span>Excel (.xlsx)</span>
-                    </label>
-                    <label class="export-format">
-                        <input type="radio" name="export-format">
-                        <span>PDF отчет</span>
-                    </label>
-                    <label class="export-format">
-                        <input type="radio" name="export-format">
-                        <span>CSV данные</span>
-                    </label>
-                    <label class="export-format">
-                        <input type="radio" name="export-format">
-                        <span>PNG графики</span>
-                    </label>
-                    
-                    <button class="btn btn-primary">Скачать отчет</button>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-column">
-                    <h3>Ростелеком</h3>
-                    <ul>
-                        <li><a href="#">О компании</a></li>
-                        <li><a href="#">Новости</a></li>
-                        <li><a href="#">Карьера</a></li>
-                        <li><a href="#">Контакты</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Продукты</h3>
-                    <ul>
-                        <li><a href="#">Интернет</a></li>
-                        <li><a href="#">Телефония</a></li>
-                        <li><a href="#">Инфобезопасность</a></li>
-                        <li><a href="#">Облачные сервисы</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Поддержка</h3>
-                    <ul>
-                        <li><a href="#">Помощь</a></li>
-                        <li><a href="#">Документация</a></li>
-                        <li><a href="#">Форум</a></li>
-                        <li><a href="#">Сообщить о проблеме</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Контакты</h3>
-                    <ul>
-                        <li>8 800 100 0 800</li>
-                        <li>support@rtk.ru</li>
-                        <li>г. Москва, ул. Примерная, д. 1</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <div class="copyright">© 2023 ПАО «Ростелеком». Все права защищены.</div>
-                <div class="social-links">
-                    <a href="#" class="social-link">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 2H15C13.6739 2 12.4021 2.52678 11.4645 3.46447C10.5268 4.40215 10 5.67392 10 7V10H7V14H10V22H14V14H17L18 10H14V7C14 6.73478 14.1054 6.48043 14.2929 6.29289C14.4804 6.10536 14.7348 6 15 6H18V2Z" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </a>
-                    <a href="#" class="social-link">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M22 4.01C21.0424 4.48488 20.0151 4.80741 19 5C20.0151 4.49559 20.823 3.61453 21.2 2.5C20.2406 2.96995 19.2013 3.29144 18.15 3.45C17.237 2.49994 15.9159 1.97691 14.54 2C11.7736 2 9.53999 4.23361 9.53999 7C9.53999 7.36861 9.57999 7.72721 9.65999 8.07C6.53999 7.875 3.70999 6.3225 1.66999 3.96C1.24864 4.67357 1.01392 5.48392 1.00999 6.31C1.00999 7.9375 1.84999 9.36 3.09999 10.16C2.36276 10.138 1.64472 9.93651 1.00999 9.58V9.63C1.00999 11.795 2.54999 13.605 4.59999 14.035C4.1863 14.1513 3.75542 14.209 3.32249 14.205C3.01049 14.2047 2.69944 14.1759 2.39399 14.12C2.70299 15.9195 4.13199 17.305 5.86199 17.34C4.49999 18.63 2.73999 19.3575 0.869995 19.35C0.579995 19.35 0.289995 19.3325 0 19.2975C1.77999 20.64 3.87249 21.3575 6.06749 21.35C13.62 21.35 17.67 14.2775 17.67 8.0325C17.67 7.8375 17.665 7.6425 17.6575 7.4525C18.62 6.7825 19.4575 5.9475 20.12 5C19.215 5.37 18.2475 5.6025 17.25 5.695C18.27 5.0925 19.0425 4.12 19.44 2.945C19.47 2.87 19.5 2.795 19.5275 2.72C18.5175 3.3075 17.4075 3.7125 16.24 3.9075C15.2525 2.9225 13.86 2.3375 12.3175 2.3375C9.43749 2.3375 7.10749 4.6675 7.10749 7.5475C7.10749 8.0075 7.16249 8.4525 7.26749 8.88C4.79999 8.7375 2.57499 7.5475 1.10999 5.68C0.602489 6.5225 0.322489 7.495 0.322489 8.5225C0.322489 10.48 1.35999 12.195 2.87999 13.1475C2.23749 13.1275 1.62749 12.95 1.09999 12.65C1.09999 12.6675 1.09999 12.6825 1.09999 12.7C1.09999 15.195 2.99999 17.245 5.44749 17.6975C4.95249 17.8225 4.44499 17.885 3.93499 17.8825C3.63249 17.8825 3.33249 17.8575 3.03749 17.8125C3.64749 19.7625 5.47749 21.1625 7.57749 21.2C5.84999 22.495 3.63999 23.2575 1.24999 23.2575C0.829994 23.2575 0.414994 23.235 0 23.19C2.22749 24.555 4.85249 25.3375 7.64749 25.3375C16.69 25.3375 21.5 17.9725 21.5 8.5075C21.5 8.2175 21.495 7.93 21.485 7.6425C22.34 6.9925 23.06 6.185 23.62 5.2675Z" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </a>
-                    <a href="#" class="social-link">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M16 8C17.5913 8 19.1174 8.63214 20.2426 9.75736C21.3679 10.8826 22 12.4087 22 14V21H18V14C18 13.4696 17.7893 12.9609 17.4142 12.5858C17.0391 12.2107 16.5304 12 16 12C15.4696 12 14.9609 12.2107 14.5858 12.5858C14.2107 12.9609 14 13.4696 14 14V21H10V14C10 12.4087 10.6321 10.8826 11.7574 9.75736C12.8826 8.63214 14.4087 8 16 8Z" stroke="currentColor" stroke-width="2"/>
-                            <path d="M6 9H2V21H6V9Z" stroke="currentColor" stroke-width="2"/>
-                            <path d="M4 6C5.10457 6 6 5.10457 6 4C6 2.89543 5.10457 2 4 2C2.89543 2 2 2.89543 2 4C2 5.10457 2.89543 6 4 6Z" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </footer>
-
     <script>
-        // Активация фильтров времени
-        document.querySelectorAll('.time-filter').forEach(filter => {
-            filter.addEventListener('click', function() {
-                document.querySelectorAll('.time-filter').forEach(f => f.classList.remove('active'));
-                this.classList.add('active');
-            });
+        // Projects by Stage Chart
+        const stagesCtx = document.getElementById('stagesChart').getContext('2d');
+        const stagesChart = new Chart(stagesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [<?= implode(',', array_map(function($stage) { return "'" . addslashes($stage['stage_name']) . "'"; }, $stages)) ?>],
+                datasets: [{
+                    data: [<?= implode(',', array_column($stages, 'project_count')) ?>],
+                    backgroundColor: [
+                        '#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+                        '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#ec4899'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
         });
 
-        // Активация форматов экспорта
-        document.querySelectorAll('.export-format').forEach(format => {
-            format.addEventListener('click', function() {
-                document.querySelectorAll('.export-format').forEach(f => f.classList.remove('active'));
-                this.classList.add('active');
-                this.querySelector('input').checked = true;
-            });
+        // Revenue by Service Chart
+        const servicesCtx = document.getElementById('servicesChart').getContext('2d');
+        const servicesChart = new Chart(servicesCtx, {
+            type: 'bar',
+            data: {
+                labels: [<?= implode(',', array_map(function($service) { return "'" . addslashes($service['service_name']) . "'"; }, $services)) ?>],
+                datasets: [{
+                    label: 'Выручка (руб.)',
+                    data: [<?= implode(',', array_column($services, 'total_revenue')) ?>],
+                    backgroundColor: '#4f46e5'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('ru-RU') + ' ₽';
+                            }
+                        }
+                    }
+                }
+            }
         });
 
-        // Имитация загрузки данных
-        document.addEventListener('DOMContentLoaded', function() {
-            // Можно добавить реальные графики с помощью Chart.js или другой библиотеки
-            console.log('Страница аналитики загружена');
+        // Manager Performance Chart
+        const managersCtx = document.getElementById('managersChart').getContext('2d');
+        const managersChart = new Chart(managersCtx, {
+            type: 'bar',
+            data: {
+                labels: [<?= implode(',', array_map(function($manager) { return "'" . addslashes($manager['manager_name']) . "'"; }, $managers)) ?>],
+                datasets: [{
+                    label: 'Выручка',
+                    data: [<?= implode(',', array_column($managers, 'total_revenue')) ?>],
+                    backgroundColor: '#10b981',
+                    order: 2
+                }, {
+                    label: 'Средняя вероятность',
+                    data: [<?= implode(',', array_column($managers, 'avg_probability')) ?>],
+                    type: 'line',
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'transparent',
+                    yAxisID: 'y1',
+                    order: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('ru-RU') + ' ₽';
+                            }
+                        }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Monthly Dynamics Chart
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        const monthlyChart = new Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+                labels: [<?= implode(',', array_map(function($month) { 
+                    $date = date_create($month['month']);
+                    return "'" . date_format($date, 'M Y') . "'"; 
+                }, array_reverse($monthly_data))) ?>],
+                datasets: [{
+                    label: 'Новые проекты',
+                    data: [<?= implode(',', array_column(array_reverse($monthly_data), 'new_projects')) ?>],
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    yAxisID: 'y',
+                    fill: true
+                }, {
+                    label: 'Выручка',
+                    data: [<?= implode(',', array_column(array_reverse($monthly_data), 'monthly_revenue')) ?>],
+                    borderColor: '#10b981',
+                    backgroundColor: 'transparent',
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left'
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('ru-RU') + ' ₽';
+                            }
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
         });
     </script>
 </body>

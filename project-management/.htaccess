@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# Перенаправление с .html на .php
+RewriteRule ^(.*)\.html$ $1.php [NC,L]
+
+# Защита конфигурационных файлов
+<Files "*.php">
+    Order Allow,Deny
+    Allow from all
+</Files>
+<Files "config.php">
+    Order Allow,Deny
+    Deny from all
+</Files>

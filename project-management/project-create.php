@@ -7,310 +7,52 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        .project-create {
-            padding: 2rem 0;
-        }
-
-        .create-header {
-            background: linear-gradient(135deg, #f7f0ff 0%, #ede6ff 100%);
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-        }
-
-        .create-steps {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 2rem;
-            gap: 2rem;
-        }
-
-        .step {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 1rem 1.5rem;
-            background: white;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .step.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        .step-number {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--light);
-            font-weight: 600;
-        }
-
-        .step.active .step-number {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .step-title {
-            font-weight: 500;
-        }
-
-        .create-form {
-            background: white;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .form-section {
-            padding: 2rem;
-            border-bottom: 1px solid var(--gray-light);
-        }
-
-        .form-section:last-child {
-            border-bottom: none;
-        }
-
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: var(--dark);
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-label {
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: var(--dark);
-        }
-
-        .form-label .required {
-            color: var(--danger);
-        }
-
-        .form-input, .form-select, .form-textarea {
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--gray-light);
-            border-radius: var(--radius);
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            transition: var(--transition);
-        }
-
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(119, 0, 255, 0.1);
-        }
-
-        .form-textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            cursor: pointer;
-        }
-
-        .checkbox-label input {
-            display: none;
-        }
-
-        .checkmark {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--gray-light);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
-        }
-
-        .checkbox-label input:checked + .checkmark {
-            background: var(--primary);
-            border-color: var(--primary);
-        }
-
-        .checkbox-label input:checked + .checkmark::after {
-            content: '✓';
-            color: white;
-            font-size: 14px;
-        }
-
-        .finance-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        .finance-table th,
-        .finance-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid var(--gray-light);
-        }
-
-        .finance-table th {
-            background: var(--light);
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .table-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .form-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem 2rem;
-            background: var(--light);
-            border-top: 1px solid var(--gray-light);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .form-progress {
-            flex: 1;
-            max-width: 300px;
-        }
-
-        .progress-bar {
-            height: 6px;
-            background: var(--gray-light);
-            border-radius: 3px;
-            margin-bottom: 0.5rem;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--primary);
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-
-        .progress-text {
-            font-size: 0.875rem;
-            color: var(--gray);
-            text-align: center;
-        }
-
-        .conditional-field {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .conditional-field.show {
-            display: block;
-        }
-
-        .history-preview {
-            background: var(--light);
-            border-radius: var(--radius);
-            padding: 1.5rem;
-            margin-top: 1rem;
-        }
-
-        .history-item {
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--gray-light);
-        }
-
-        .history-item:last-child {
-            border-bottom: none;
-        }
-
-        .history-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.875rem;
-            color: var(--gray);
-            margin-bottom: 0.25rem;
-        }
-
-        .history-change {
-            font-weight: 500;
-        }
-
-        .auto-calculated {
-            background: var(--light);
-            color: var(--gray);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .create-steps {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-actions {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            .action-buttons {
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .form-progress {
-                max-width: 100%;
-            }
-        }
+        /* ... существующие стили ... */
     </style>
 </head>
 <body>
     <!-- Header -->
-    <?php require_once 'blocks/head.php'; ?>
-
+    <?php 
+    require_once 'blocks/head.php';
+    require_once 'database.php';
+    
+    // Загрузка данных из БД для выпадающих списков
+    try {
+        $conn = Database::connect();
+        
+        // Загрузка услуг
+        $services_result = pg_query($conn, "SELECT id, name FROM dictionaries WHERE type = 'service' AND is_active = true ORDER BY sort_order");
+        $services = pg_fetch_all($services_result) ?: [];
+        
+        // Загрузка типов платежей
+        $payment_types_result = pg_query($conn, "SELECT id, name FROM dictionaries WHERE type = 'payment_type' AND is_active = true ORDER BY sort_order");
+        $payment_types = pg_fetch_all($payment_types_result) ?: [];
+        
+        // Загрузка этапов проекта
+        $stages_result = pg_query($conn, "SELECT id, name, probability FROM dictionaries WHERE type = 'stage' AND is_active = true ORDER BY sort_order");
+        $stages = pg_fetch_all($stages_result) ?: [];
+        
+        // Загрузка менеджеров
+        $managers_result = pg_query($conn, "SELECT id, full_name FROM users WHERE is_active = true ORDER BY full_name");
+        $managers = pg_fetch_all($managers_result) ?: [];
+        
+        // Загрузка сегментов бизнеса
+        $segments_result = pg_query($conn, "SELECT id, name FROM dictionaries WHERE type = 'segment' AND is_active = true ORDER BY sort_order");
+        $segments = pg_fetch_all($segments_result) ?: [];
+        
+        // Загрузка статусов оценки
+        $evaluation_statuses_result = pg_query($conn, "SELECT id, name FROM dictionaries WHERE type = 'evaluation_status' AND is_active = true ORDER BY sort_order");
+        $evaluation_statuses = pg_fetch_all($evaluation_statuses_result) ?: [];
+        
+        // Загрузка отраслевых менеджеров
+        $industry_managers_result = pg_query($conn, "SELECT id, full_name FROM users WHERE is_active = true AND id IN (SELECT DISTINCT industry_manager_id FROM projects WHERE industry_manager_id IS NOT NULL) ORDER BY full_name");
+        $industry_managers = pg_fetch_all($industry_managers_result) ?: [];
+        
+    } catch (Exception $e) {
+        error_log("Error loading form data: " . $e->getMessage());
+        $services = $payment_types = $stages = $managers = $segments = $evaluation_statuses = $industry_managers = [];
+    }
+    ?>
 
     <!-- Create Header -->
     <section class="create-header">
@@ -343,7 +85,7 @@
                 </div>
             </div>
 
-            <form class="create-form" id="project-form">
+            <form class="create-form" id="project-form" action="project-save.php" method="POST">
                 <!-- Общая информация -->
                 <div class="form-section active" data-section="general">
                     <h2 class="section-title">Общая информация по проекту</h2>
@@ -368,12 +110,9 @@
                             <label class="form-label">Услуга <span class="required">*</span></label>
                             <select class="form-select" name="service_id" required>
                                 <option value="">Выберите услугу</option>
-                                <option value="1">Интернет</option>
-                                <option value="2">Телефония</option>
-                                <option value="3">Инфобез</option>
-                                <option value="4">Цифровые сервисы</option>
-                                <option value="5">Облачные сервисы</option>
-                                <option value="6">Отраслевые решения</option>
+                                <?php foreach ($services as $service): ?>
+                                    <option value="<?= $service['id'] ?>"><?= htmlspecialchars($service['name']) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
 
@@ -381,11 +120,9 @@
                             <label class="form-label">Тип платежа <span class="required">*</span></label>
                             <select class="form-select" name="payment_type_id" required>
                                 <option value="">Выберите тип платежа</option>
-                                <option value="1">Инсталляции</option>
-                                <option value="2">Сервисная</option>
-                                <option value="3">Оборудование</option>
-                                <option value="4">Разовые</option>
-                                <option value="5">Интеграционные проекты</option>
+                                <?php foreach ($payment_types as $payment_type): ?>
+                                    <option value="<?= $payment_type['id'] ?>"><?= htmlspecialchars($payment_type['name']) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
 
@@ -393,16 +130,11 @@
                             <label class="form-label">Этап проекта <span class="required">*</span></label>
                             <select class="form-select" name="stage_id" required>
                                 <option value="">Выберите этап</option>
-                                <option value="1">1. Лид (10%)</option>
-                                <option value="2">2. Проработка лида (20%)</option>
-                                <option value="3">3. КП (30%)</option>
-                                <option value="4">4. Пилот (40%)</option>
-                                <option value="5">5. Выделение финансирования (40%)</option>
-                                <option value="6">6. Закупка/торги (50%)</option>
-                                <option value="7">7. Заключение Д Д (70%)</option>
-                                <option value="8">8. Заключение РД (80%)</option>
-                                <option value="9">9. Реализация (90%)</option>
-                                <option value="10">10. Успех (100%)</option>
+                                <?php foreach ($stages as $stage): ?>
+                                    <option value="<?= $stage['id'] ?>" data-probability="<?= $stage['probability'] ?>">
+                                        <?= htmlspecialchars($stage['name']) ?> (<?= round($stage['probability'] * 100) ?>%)
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
 
@@ -416,11 +148,9 @@
                             <label class="form-label">Менеджер <span class="required">*</span></label>
                             <select class="form-select" name="manager_id" required>
                                 <option value="">Выберите менеджера</option>
-                                <option value="1">Иванов И.И.</option>
-                                <option value="2">Смирнов С.С.</option>
-                                <option value="3">Кузнецов К.К.</option>
-                                <option value="4">Попов П.П.</option>
-                                <option value="5">Васильев В.В.</option>
+                                <?php foreach ($managers as $manager): ?>
+                                    <option value="<?= $manager['id'] ?>"><?= htmlspecialchars($manager['full_name']) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
 
@@ -428,16 +158,15 @@
                             <label class="form-label">Сегмент бизнеса</label>
                             <select class="form-select" name="segment_id">
                                 <option value="">Выберите сегмент</option>
-                                <option value="1">Крупный сегмент</option>
-                                <option value="2">Госсектор</option>
-                                <option value="3">Средний сегмент</option>
-                                <option value="4">Малые предприятия</option>
+                                <?php foreach ($segments as $segment): ?>
+                                    <option value="<?= $segment['id'] ?>"><?= htmlspecialchars($segment['name']) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Год реализации</label>
-                            <input type="number" class="form-input" name="implementation_year" min="2023" max="2030" value="2025">
+                            <input type="number" class="form-input" name="implementation_year" min="2023" max="2030" value="<?= date('Y') ?>">
                         </div>
                     </div>
 
@@ -474,8 +203,9 @@
                                 <label class="form-label">Отраслевой менеджер</label>
                                 <select class="form-select" name="industry_manager_id">
                                     <option value="">Выберите отраслевого менеджера</option>
-                                    <option value="1">Петров А.А.</option>
-                                    <option value="2">Сидоров Б.Б.</option>
+                                    <?php foreach ($industry_managers as $manager): ?>
+                                        <option value="<?= $manager['id'] ?>"><?= htmlspecialchars($manager['full_name']) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
 
@@ -491,10 +221,9 @@
                             <label class="form-label">Принимаемый к оценке</label>
                             <select class="form-select" name="accepted_for_evaluation_id">
                                 <option value="">Выберите статус</option>
-                                <option value="1">ОЦЕНКА</option>
-                                <option value="2">ПКМ</option>
-                                <option value="3">ОТТОК</option>
-                                <option value="4">ДАШ_ПКМ</option>
+                                <?php foreach ($evaluation_statuses as $status): ?>
+                                    <option value="<?= $status['id'] ?>"><?= htmlspecialchars($status['name']) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
@@ -602,51 +331,7 @@
 
     <!-- Footer -->
     <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-column">
-                    <h3>Ростелеком</h3>
-                    <ul>
-                        <li><a href="#">О компании</a></li>
-                        <li><a href="#">Новости</a></li>
-                        <li><a href="#">Карьера</a></li>
-                        <li><a href="#">Контакты</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Продукты</h3>
-                    <ul>
-                        <li><a href="#">Интернет</a></li>
-                        <li><a href="#">Телефония</a></li>
-                        <li><a href="#">Инфобезопасность</a></li>
-                        <li><a href="#">Облачные сервисы</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Поддержка</h3>
-                    <ul>
-                        <li><a href="#">Помощь</a></li>
-                        <li><a href="#">Документация</a></li>
-                        <li><a href="#">Форум</a></li>
-                        <li><a href="#">Сообщить о проблеме</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Контакты</h3>
-                    <ul>
-                        <li>8 800 100 0 800</li>
-                        <li>support@rtk.ru</li>
-                        <li>г. Москва, ул. Примерная, д. 1</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <div class="copyright">© 2023 ПАО «Ростелеком». Все права защищены.</div>
-                <div class="social-links">
-                    <!-- Социальные ссылки -->
-                </div>
-            </div>
-        </div>
+        <!-- ... существующий футер ... -->
     </footer>
 
     <script>
@@ -734,22 +419,14 @@
         const stageSelect = document.querySelector('select[name="stage_id"]');
         const probabilityInput = document.querySelector('input[name="probability"]');
         
-        const stageProbabilities = {
-            '1': '10%',
-            '2': '20%',
-            '3': '30%',
-            '4': '40%',
-            '5': '40%',
-            '6': '50%',
-            '7': '70%',
-            '8': '80%',
-            '9': '90%',
-            '10': '100%'
-        };
-        
         stageSelect.addEventListener('change', function() {
-            const probability = stageProbabilities[this.value] || '';
-            probabilityInput.value = probability;
+            const selectedOption = this.options[this.selectedIndex];
+            const probability = selectedOption.getAttribute('data-probability');
+            if (probability) {
+                probabilityInput.value = Math.round(probability * 100) + '%';
+            } else {
+                probabilityInput.value = '';
+            }
         });
 
         // Условные поля
@@ -804,8 +481,8 @@
                     <select class="form-input" name="revenue[${revenueCounter}][year]">
                         <option value="2023">2023</option>
                         <option value="2024">2024</option>
-                        <option value="2025" selected>2025</option>
-                        <option value="2026">2026</option>
+                        <option value="<?= date('Y') ?>" selected><?= date('Y') ?></option>
+                        <option value="<?= date('Y') + 1 ?>"><?= date('Y') + 1 ?></option>
                     </select>
                 </td>
                 <td>
@@ -818,9 +495,9 @@
                 <td><input type="number" class="form-input" name="revenue[${revenueCounter}][amount]" placeholder="0.00" step="0.01"></td>
                 <td>
                     <select class="form-input" name="revenue[${revenueCounter}][status]">
-                        <option value="1">начислена</option>
-                        <option value="2">прогнозное начисление</option>
-                        <option value="3">начисление планируется</option>
+                        <option value="35">начислена</option>
+                        <option value="36">прогнозное начисление</option>
+                        <option value="37">начисление планируется</option>
                     </select>
                 </td>
                 <td><button type="button" class="btn btn-danger" onclick="this.closest('tr').remove()">Удалить</button></td>
@@ -837,8 +514,8 @@
                     <select class="form-input" name="cost[${costCounter}][year]">
                         <option value="2023">2023</option>
                         <option value="2024">2024</option>
-                        <option value="2025" selected>2025</option>
-                        <option value="2026">2026</option>
+                        <option value="<?= date('Y') ?>" selected><?= date('Y') ?></option>
+                        <option value="<?= date('Y') + 1 ?>"><?= date('Y') + 1 ?></option>
                     </select>
                 </td>
                 <td>
@@ -851,17 +528,17 @@
                 <td><input type="number" class="form-input" name="cost[${costCounter}][amount]" placeholder="0.00" step="0.01"></td>
                 <td>
                     <select class="form-input" name="cost[${costCounter}][type]">
-                        <option value="1">Прямые</option>
-                        <option value="2">Коммерческие</option>
-                        <option value="3">РСД</option>
-                        <option value="4">Штрафы</option>
+                        <option value="31">Прямые</option>
+                        <option value="32">Коммерческие</option>
+                        <option value="33">РСД</option>
+                        <option value="34">Штрафы</option>
                     </select>
                 </td>
                 <td>
                     <select class="form-input" name="cost[${costCounter}][status]">
-                        <option value="1">начислены</option>
-                        <option value="2">создан резерв</option>
-                        <option value="3">отражение планируется</option>
+                        <option value="38">начислены</option>
+                        <option value="39">создан резерв</option>
+                        <option value="40">отражение планируется</option>
                     </select>
                 </td>
                 <td><button type="button" class="btn btn-danger" onclick="this.closest('tr').remove()">Удалить</button></td>
@@ -871,50 +548,9 @@
 
         // Отправка формы
         document.getElementById('project-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            if (validateStep(currentStep)) {
-                // Сбор данных формы
-                const formData = new FormData(this);
-                const data = Object.fromEntries(formData.entries());
-                
-                // Добавление финансовых данных
-                const revenueData = [];
-                const costData = [];
-                
-                document.querySelectorAll('#revenue-body tr').forEach((row, index) => {
-                    const inputs = row.querySelectorAll('select, input');
-                    revenueData.push({
-                        year: inputs[0].value,
-                        month: inputs[1].value,
-                        amount: inputs[2].value,
-                        status: inputs[3].value
-                    });
-                });
-                
-                document.querySelectorAll('#cost-body tr').forEach((row, index) => {
-                    const inputs = row.querySelectorAll('select, input');
-                    costData.push({
-                        year: inputs[0].value,
-                        month: inputs[1].value,
-                        amount: inputs[2].value,
-                        type: inputs[3].value,
-                        status: inputs[4].value
-                    });
-                });
-                
-                data.revenue = revenueData;
-                data.cost = costData;
-                data.created_by = 1; // ID текущего пользователя
-                data.creation_date = new Date().toISOString();
-                
-                console.log('Данные для отправки:', data);
-                
-                // Имитация отправки на сервер
-                setTimeout(() => {
-                    alert('Проект успешно создан!');
-                    window.location.href = 'projects.php';
-                }, 1000);
+            if (!validateStep(currentStep)) {
+                e.preventDefault();
+                alert('Пожалуйста, заполните все обязательные поля');
             }
         });
 

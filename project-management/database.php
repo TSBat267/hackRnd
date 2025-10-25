@@ -16,6 +16,23 @@ class Database {
         return self::$connection;
     }
     
+    public static function fetchAll($query, $params = []) {
+        $conn = self::connect();
+        $result = pg_query_params($conn, $query, $params);
+        return pg_fetch_all($result) ?: [];
+    }
+    
+    public static function fetchOne($query, $params = []) {
+        $conn = self::connect();
+        $result = pg_query_params($conn, $query, $params);
+        return pg_fetch_assoc($result) ?: [];
+    }
+    
+    public static function execute($query, $params = []) {
+        $conn = self::connect();
+        return pg_query_params($conn, $query, $params);
+    }
+    
     public static function testConnection() {
         try {
             $conn = self::connect();

@@ -1,0 +1,1158 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 16.4
+-- Dumped by pg_dump version 16.4
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: log_project_changes(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.log_project_changes() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Логируем изменения только для таблицы projects
+    IF TG_TABLE_NAME = 'projects' THEN
+        IF TG_OP = 'UPDATE' THEN
+            INSERT INTO project_history (project_id, user_id, changed_table, changed_field, old_value, new_value)
+            SELECT 
+                NEW.id,
+                COALESCE(NEW.updated_by, NEW.created_by),
+                TG_TABLE_NAME,
+                old_data.key,
+                old_data.value::text,
+                new_data.value::text
+            FROM json_each(to_json(OLD)) AS old_data
+            JOIN json_each(to_json(NEW)) AS new_data ON old_data.key = new_data.key
+            WHERE old_data.value::text IS DISTINCT FROM new_data.value::text;
+            
+        ELSIF TG_OP = 'INSERT' THEN
+            INSERT INTO project_history (project_id, user_id, changed_table, changed_field, old_value, new_value)
+            SELECT 
+                NEW.id,
+                NEW.created_by,
+                TG_TABLE_NAME,
+                new_data.key,
+                NULL,
+                new_data.value::text
+            FROM json_each(to_json(NEW)) AS new_data;
+        END IF;
+    END IF;
+    
+    RETURN NULL;
+END;
+$$;
+
+
+ALTER FUNCTION public.log_project_changes() OWNER TO postgres;
+
+--
+-- Name: update_project_probability(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_project_probability() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NEW.stage_id IS NOT NULL THEN
+        SELECT probability INTO NEW.probability 
+        FROM dictionaries 
+        WHERE id = NEW.stage_id AND type = 'stage';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_project_probability() OWNER TO postgres;
+
+--
+-- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_updated_at_column() OWNER TO postgres;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: dictionaries; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.dictionaries (
+    id integer NOT NULL,
+    type character varying(50) NOT NULL,
+    code character varying(100) NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    probability numeric(3,2),
+    parent_id integer,
+    sort_order integer DEFAULT 0,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.dictionaries OWNER TO postgres;
+
+--
+-- Name: dictionaries_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.dictionaries_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.dictionaries_id_seq OWNER TO postgres;
+
+--
+-- Name: dictionaries_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.dictionaries_id_seq OWNED BY public.dictionaries.id;
+
+
+--
+-- Name: project_costs; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_costs (
+    id integer NOT NULL,
+    project_id integer,
+    year integer NOT NULL,
+    month integer NOT NULL,
+    amount numeric(15,2) DEFAULT 0 NOT NULL,
+    cost_type_id integer,
+    cost_status_id integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT project_costs_month_check CHECK (((month >= 1) AND (month <= 12)))
+);
+
+
+ALTER TABLE public.project_costs OWNER TO postgres;
+
+--
+-- Name: project_costs_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_costs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_costs_id_seq OWNER TO postgres;
+
+--
+-- Name: project_costs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_costs_id_seq OWNED BY public.project_costs.id;
+
+
+--
+-- Name: project_history; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_history (
+    id integer NOT NULL,
+    project_id integer,
+    user_id integer,
+    changed_table character varying(50) NOT NULL,
+    changed_field character varying(100) NOT NULL,
+    old_value text,
+    new_value text,
+    change_timestamp timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    ip_address inet
+);
+
+
+ALTER TABLE public.project_history OWNER TO postgres;
+
+--
+-- Name: project_history_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_history_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_history_id_seq OWNER TO postgres;
+
+--
+-- Name: project_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_history_id_seq OWNED BY public.project_history.id;
+
+
+--
+-- Name: project_revenues; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_revenues (
+    id integer NOT NULL,
+    project_id integer,
+    year integer NOT NULL,
+    month integer NOT NULL,
+    amount numeric(15,2) DEFAULT 0 NOT NULL,
+    revenue_status_id integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT project_revenues_month_check CHECK (((month >= 1) AND (month <= 12)))
+);
+
+
+ALTER TABLE public.project_revenues OWNER TO postgres;
+
+--
+-- Name: project_revenues_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_revenues_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_revenues_id_seq OWNER TO postgres;
+
+--
+-- Name: project_revenues_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_revenues_id_seq OWNED BY public.project_revenues.id;
+
+
+--
+-- Name: projects; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.projects (
+    id integer NOT NULL,
+    organization_name character varying(500) NOT NULL,
+    organization_inn character varying(12) NOT NULL,
+    project_name character varying(500) NOT NULL,
+    service_id integer,
+    payment_type_id integer,
+    stage_id integer,
+    probability numeric(3,2),
+    manager_id integer,
+    segment_id integer,
+    implementation_year integer,
+    is_industry_solution boolean DEFAULT false,
+    is_forecast_accepted boolean DEFAULT false,
+    is_dzo_implementation boolean DEFAULT false,
+    needs_management_control boolean DEFAULT false,
+    accepted_for_evaluation_id integer,
+    industry_manager_id integer,
+    project_number character varying(100),
+    creation_date timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    current_status text,
+    period_achievements text,
+    next_period_plans text,
+    created_by integer,
+    updated_by integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.projects OWNER TO postgres;
+
+--
+-- Name: projects_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.projects_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.projects_id_seq OWNER TO postgres;
+
+--
+-- Name: projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.projects_id_seq OWNED BY public.projects.id;
+
+
+--
+-- Name: user_dashboards; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_dashboards (
+    id integer NOT NULL,
+    user_id integer,
+    dashboard_name character varying(255) NOT NULL,
+    dashboard_config jsonb NOT NULL,
+    is_default boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.user_dashboards OWNER TO postgres;
+
+--
+-- Name: user_dashboards_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_dashboards_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_dashboards_id_seq OWNER TO postgres;
+
+--
+-- Name: user_dashboards_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_dashboards_id_seq OWNED BY public.user_dashboards.id;
+
+
+--
+-- Name: user_reports; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_reports (
+    id integer NOT NULL,
+    user_id integer,
+    report_name character varying(255) NOT NULL,
+    report_config jsonb NOT NULL,
+    is_public boolean DEFAULT false,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.user_reports OWNER TO postgres;
+
+--
+-- Name: user_reports_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_reports_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_reports_id_seq OWNER TO postgres;
+
+--
+-- Name: user_reports_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_reports_id_seq OWNED BY public.user_reports.id;
+
+
+--
+-- Name: user_roles; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.user_roles (
+    id integer NOT NULL,
+    name character varying(50) NOT NULL,
+    description text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.user_roles OWNER TO postgres;
+
+--
+-- Name: user_roles_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.user_roles_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.user_roles_id_seq OWNER TO postgres;
+
+--
+-- Name: user_roles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.user_roles_id_seq OWNED BY public.user_roles.id;
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.users (
+    id integer NOT NULL,
+    username character varying(100) NOT NULL,
+    email character varying(255),
+    password_hash character varying(255) NOT NULL,
+    full_name character varying(255) NOT NULL,
+    role_id integer,
+    is_active boolean DEFAULT true,
+    two_factor_secret character varying(255),
+    last_login timestamp without time zone,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.users OWNER TO postgres;
+
+--
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.users_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.users_id_seq OWNER TO postgres;
+
+--
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+
+--
+-- Name: dictionaries id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.dictionaries ALTER COLUMN id SET DEFAULT nextval('public.dictionaries_id_seq'::regclass);
+
+
+--
+-- Name: project_costs id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_costs ALTER COLUMN id SET DEFAULT nextval('public.project_costs_id_seq'::regclass);
+
+
+--
+-- Name: project_history id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_history ALTER COLUMN id SET DEFAULT nextval('public.project_history_id_seq'::regclass);
+
+
+--
+-- Name: project_revenues id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_revenues ALTER COLUMN id SET DEFAULT nextval('public.project_revenues_id_seq'::regclass);
+
+
+--
+-- Name: projects id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects ALTER COLUMN id SET DEFAULT nextval('public.projects_id_seq'::regclass);
+
+
+--
+-- Name: user_dashboards id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_dashboards ALTER COLUMN id SET DEFAULT nextval('public.user_dashboards_id_seq'::regclass);
+
+
+--
+-- Name: user_reports id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_reports ALTER COLUMN id SET DEFAULT nextval('public.user_reports_id_seq'::regclass);
+
+
+--
+-- Name: user_roles id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_roles ALTER COLUMN id SET DEFAULT nextval('public.user_roles_id_seq'::regclass);
+
+
+--
+-- Name: users id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+
+--
+-- Data for Name: dictionaries; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.dictionaries (id, type, code, name, description, probability, parent_id, sort_order, is_active, created_at) FROM stdin;
+1	service	internet	Интернет	Традиционный бизнес	\N	\N	0	t	2025-10-25 11:10:47.865462
+2	service	telephony	Телефония	Традиционный бизнес	\N	\N	0	t	2025-10-25 11:10:47.865462
+3	service	infosec	Инфобез	Кибербез	\N	\N	0	t	2025-10-25 11:10:47.865462
+4	service	digital	Цифровые сервисы	Новый телеком	\N	\N	0	t	2025-10-25 11:10:47.865462
+5	service	cloud	Облачные сервисы	Новый телеком	\N	\N	0	t	2025-10-25 11:10:47.865462
+6	service	industry	Отраслевые решения	Проектная деятельность	\N	\N	0	t	2025-10-25 11:10:47.865462
+7	stage	lead	1. Лид	\N	0.10	\N	1	t	2025-10-25 11:10:47.865462
+8	stage	processing	2. Проработка лида	\N	0.10	\N	2	t	2025-10-25 11:10:47.865462
+9	stage	proposal	3. КП	\N	0.30	\N	3	t	2025-10-25 11:10:47.865462
+10	stage	pilot	4. Пилот	\N	0.40	\N	4	t	2025-10-25 11:10:47.865462
+11	stage	funding	5. Выделение финансирования	\N	0.40	\N	5	t	2025-10-25 11:10:47.865462
+12	stage	purchase	6. Закупка/торги	\N	0.50	\N	6	t	2025-10-25 11:10:47.865462
+13	stage	contract_dd	7. Заключение Д Д	\N	0.70	\N	7	t	2025-10-25 11:10:47.865462
+14	stage	contract_rd	8. Заключение РД	\N	0.80	\N	8	t	2025-10-25 11:10:47.865462
+15	stage	implementation	9. Реализация	\N	0.90	\N	9	t	2025-10-25 11:10:47.865462
+16	stage	success	10. Успех	\N	1.00	\N	10	t	2025-10-25 11:10:47.865462
+17	payment_type	installation	Инсталляции	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+18	payment_type	service	Сервисная	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+19	payment_type	equipment	Оборудование	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+20	payment_type	one_time	Разовые	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+21	payment_type	integration	Интеграционные проекты	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+22	segment	large	Крупный сегмент	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+23	segment	government	Госсектор	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+24	segment	medium	Средний сегмент	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+25	segment	small	Малые предприятия	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+26	evaluation_status	assessment	ОЦЕНКА	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+27	evaluation_status	pcm	ПКМ	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+28	evaluation_status	outflow	ОТТОК	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+29	evaluation_status	delete	Delete	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+30	evaluation_status	dash_pcm	ДАШ_ПКМ	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+31	cost_type	direct	Прямые	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+32	cost_type	commercial	Коммерческие	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+33	cost_type	rsd	РСД	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+34	cost_type	fines	Штрафы	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+35	revenue_status	accrued	начислена	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+36	revenue_status	forecast	прогнозное начисление	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+37	revenue_status	planned	начисление планируется	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+38	cost_status	accrued	начислены	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+39	cost_status	reserve	создан резерв	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+40	cost_status	planned	отражение планируется	\N	\N	\N	0	t	2025-10-25 11:10:47.865462
+\.
+
+
+--
+-- Data for Name: project_costs; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.project_costs (id, project_id, year, month, amount, cost_type_id, cost_status_id, created_at, updated_at) FROM stdin;
+2	2	2025	1	5423.00	31	38	2025-10-25 19:49:00.013174	2025-10-25 19:49:00.013174
+\.
+
+
+--
+-- Data for Name: project_history; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.project_history (id, project_id, user_id, changed_table, changed_field, old_value, new_value, change_timestamp, ip_address) FROM stdin;
+84	2	1	projects	service_id	2	1	2025-10-25 19:48:35.830912	\N
+85	2	1	projects	updated_at	"2025-10-25T19:45:11.058552"	"2025-10-25T19:48:35.830912"	2025-10-25 19:48:35.830912	\N
+86	2	1	projects	updated_at	"2025-10-25T19:48:35.830912"	"2025-10-25T19:49:00.013174"	2025-10-25 19:49:00.013174	\N
+27	2	1	projects	id	\N	2	2025-10-25 18:43:01.619983	\N
+28	2	1	projects	organization_name	\N	"FHBFSXG"	2025-10-25 18:43:01.619983	\N
+29	2	1	projects	organization_inn	\N	"34534534534"	2025-10-25 18:43:01.619983	\N
+30	2	1	projects	project_name	\N	"34534GRTF"	2025-10-25 18:43:01.619983	\N
+31	2	1	projects	service_id	\N	2	2025-10-25 18:43:01.619983	\N
+32	2	1	projects	payment_type_id	\N	17	2025-10-25 18:43:01.619983	\N
+33	2	1	projects	stage_id	\N	11	2025-10-25 18:43:01.619983	\N
+34	2	1	projects	probability	\N	0.40	2025-10-25 18:43:01.619983	\N
+35	2	1	projects	manager_id	\N	1	2025-10-25 18:43:01.619983	\N
+36	2	1	projects	segment_id	\N	23	2025-10-25 18:43:01.619983	\N
+37	2	1	projects	implementation_year	\N	2025	2025-10-25 18:43:01.619983	\N
+38	2	1	projects	is_industry_solution	\N	false	2025-10-25 18:43:01.619983	\N
+39	2	1	projects	is_forecast_accepted	\N	false	2025-10-25 18:43:01.619983	\N
+40	2	1	projects	is_dzo_implementation	\N	false	2025-10-25 18:43:01.619983	\N
+41	2	1	projects	needs_management_control	\N	false	2025-10-25 18:43:01.619983	\N
+42	2	1	projects	accepted_for_evaluation_id	\N	null	2025-10-25 18:43:01.619983	\N
+43	2	1	projects	industry_manager_id	\N	null	2025-10-25 18:43:01.619983	\N
+44	2	1	projects	project_number	\N	null	2025-10-25 18:43:01.619983	\N
+45	2	1	projects	creation_date	\N	"2025-10-25T18:43:01.619983"	2025-10-25 18:43:01.619983	\N
+46	2	1	projects	current_status	\N	null	2025-10-25 18:43:01.619983	\N
+47	2	1	projects	period_achievements	\N	null	2025-10-25 18:43:01.619983	\N
+48	2	1	projects	next_period_plans	\N	null	2025-10-25 18:43:01.619983	\N
+49	2	1	projects	created_by	\N	1	2025-10-25 18:43:01.619983	\N
+50	2	1	projects	updated_by	\N	1	2025-10-25 18:43:01.619983	\N
+51	2	1	projects	created_at	\N	"2025-10-25T18:43:01.619983"	2025-10-25 18:43:01.619983	\N
+52	2	1	projects	updated_at	\N	"2025-10-25T18:43:01.619983"	2025-10-25 18:43:01.619983	\N
+76	2	1	projects	is_industry_solution	false	true	2025-10-25 19:45:04.279659	\N
+77	2	1	projects	is_forecast_accepted	false	true	2025-10-25 19:45:04.279659	\N
+78	2	1	projects	is_dzo_implementation	false	true	2025-10-25 19:45:04.279659	\N
+79	2	1	projects	needs_management_control	false	true	2025-10-25 19:45:04.279659	\N
+80	2	1	projects	updated_at	"2025-10-25T18:43:01.619983"	"2025-10-25T19:45:04.279659"	2025-10-25 19:45:04.279659	\N
+81	2	1	projects	updated_at	"2025-10-25T19:45:04.279659"	"2025-10-25T19:45:11.058552"	2025-10-25 19:45:11.058552	\N
+\.
+
+
+--
+-- Data for Name: project_revenues; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.project_revenues (id, project_id, year, month, amount, revenue_status_id, created_at, updated_at) FROM stdin;
+11	2	2025	1	34654566346.00	35	2025-10-25 19:49:00.013174	2025-10-25 19:49:00.013174
+\.
+
+
+--
+-- Data for Name: projects; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.projects (id, organization_name, organization_inn, project_name, service_id, payment_type_id, stage_id, probability, manager_id, segment_id, implementation_year, is_industry_solution, is_forecast_accepted, is_dzo_implementation, needs_management_control, accepted_for_evaluation_id, industry_manager_id, project_number, creation_date, current_status, period_achievements, next_period_plans, created_by, updated_by, created_at, updated_at) FROM stdin;
+2	FHBFSXG	34534534534	34534GRTF	1	17	11	0.40	1	23	2025	t	t	t	t	\N	\N	\N	2025-10-25 18:43:01.619983	\N	\N	\N	1	1	2025-10-25 18:43:01.619983	2025-10-25 19:49:00.013174
+\.
+
+
+--
+-- Data for Name: user_dashboards; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.user_dashboards (id, user_id, dashboard_name, dashboard_config, is_default, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: user_reports; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.user_reports (id, user_id, report_name, report_config, is_public, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: user_roles; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.user_roles (id, name, description, created_at) FROM stdin;
+1	Администратор	Полный доступ, управление пользователями и справочниками	2025-10-25 11:10:47.865462
+2	Аналитик	Конструирование запросов, дашборды, выгрузка отчетов	2025-10-25 11:10:47.865462
+3	Пользователь	Создание и редактирование карточек, просмотр отчетов	2025-10-25 11:10:47.865462
+\.
+
+
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.users (id, username, email, password_hash, full_name, role_id, is_active, two_factor_secret, last_login, created_at, updated_at) FROM stdin;
+1	admin	admin@rtk.ru	$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	Администратор Системы	1	t	\N	\N	2025-10-25 11:11:06.939501	2025-10-25 11:11:06.939501
+\.
+
+
+--
+-- Name: dictionaries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.dictionaries_id_seq', 40, true);
+
+
+--
+-- Name: project_costs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.project_costs_id_seq', 2, true);
+
+
+--
+-- Name: project_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.project_history_id_seq', 86, true);
+
+
+--
+-- Name: project_revenues_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.project_revenues_id_seq', 12, true);
+
+
+--
+-- Name: projects_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.projects_id_seq', 2, true);
+
+
+--
+-- Name: user_dashboards_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.user_dashboards_id_seq', 1, false);
+
+
+--
+-- Name: user_reports_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.user_reports_id_seq', 1, true);
+
+
+--
+-- Name: user_roles_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.user_roles_id_seq', 3, true);
+
+
+--
+-- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.users_id_seq', 1, true);
+
+
+--
+-- Name: dictionaries dictionaries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.dictionaries
+    ADD CONSTRAINT dictionaries_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: dictionaries dictionaries_type_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.dictionaries
+    ADD CONSTRAINT dictionaries_type_code_key UNIQUE (type, code);
+
+
+--
+-- Name: project_costs project_costs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_costs
+    ADD CONSTRAINT project_costs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_costs project_costs_project_id_year_month_cost_type_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_costs
+    ADD CONSTRAINT project_costs_project_id_year_month_cost_type_id_key UNIQUE (project_id, year, month, cost_type_id);
+
+
+--
+-- Name: project_history project_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_history
+    ADD CONSTRAINT project_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_revenues project_revenues_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_revenues
+    ADD CONSTRAINT project_revenues_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_revenues project_revenues_project_id_year_month_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_revenues
+    ADD CONSTRAINT project_revenues_project_id_year_month_key UNIQUE (project_id, year, month);
+
+
+--
+-- Name: projects projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_dashboards user_dashboards_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_dashboards
+    ADD CONSTRAINT user_dashboards_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_reports user_reports_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_reports
+    ADD CONSTRAINT user_reports_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_roles user_roles_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_roles
+    ADD CONSTRAINT user_roles_name_key UNIQUE (name);
+
+
+--
+-- Name: user_roles user_roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_roles
+    ADD CONSTRAINT user_roles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_email_key UNIQUE (email);
+
+
+--
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users users_username_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_username_key UNIQUE (username);
+
+
+--
+-- Name: idx_history_project; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_history_project ON public.project_history USING btree (project_id);
+
+
+--
+-- Name: idx_history_timestamp; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_history_timestamp ON public.project_history USING btree (change_timestamp);
+
+
+--
+-- Name: idx_history_user; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_history_user ON public.project_history USING btree (user_id);
+
+
+--
+-- Name: idx_projects_created; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_projects_created ON public.projects USING btree (creation_date);
+
+
+--
+-- Name: idx_projects_inn; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_projects_inn ON public.projects USING btree (organization_inn);
+
+
+--
+-- Name: idx_projects_manager; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_projects_manager ON public.projects USING btree (manager_id);
+
+
+--
+-- Name: idx_projects_stage; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_projects_stage ON public.projects USING btree (stage_id);
+
+
+--
+-- Name: idx_projects_year; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_projects_year ON public.projects USING btree (implementation_year);
+
+
+--
+-- Name: projects log_projects_changes; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER log_projects_changes AFTER INSERT OR UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION public.log_project_changes();
+
+
+--
+-- Name: projects update_probability_on_stage_change; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_probability_on_stage_change BEFORE INSERT OR UPDATE OF stage_id ON public.projects FOR EACH ROW EXECUTE FUNCTION public.update_project_probability();
+
+
+--
+-- Name: project_costs update_project_costs_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_project_costs_updated_at BEFORE UPDATE ON public.project_costs FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: project_revenues update_project_revenues_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_project_revenues_updated_at BEFORE UPDATE ON public.project_revenues FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: projects update_projects_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: user_dashboards update_user_dashboards_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_user_dashboards_updated_at BEFORE UPDATE ON public.user_dashboards FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: user_reports update_user_reports_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_user_reports_updated_at BEFORE UPDATE ON public.user_reports FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: users update_users_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: dictionaries dictionaries_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.dictionaries
+    ADD CONSTRAINT dictionaries_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.dictionaries(id);
+
+
+--
+-- Name: project_costs project_costs_cost_status_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_costs
+    ADD CONSTRAINT project_costs_cost_status_id_fkey FOREIGN KEY (cost_status_id) REFERENCES public.dictionaries(id);
+
+
+--
+-- Name: project_costs project_costs_cost_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_costs
+    ADD CONSTRAINT project_costs_cost_type_id_fkey FOREIGN KEY (cost_type_id) REFERENCES public.dictionaries(id);
+
+
+--
+-- Name: project_costs project_costs_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_costs
+    ADD CONSTRAINT project_costs_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_history project_history_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_history
+    ADD CONSTRAINT project_history_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_history project_history_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_history
+    ADD CONSTRAINT project_history_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: project_revenues project_revenues_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_revenues
+    ADD CONSTRAINT project_revenues_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_revenues project_revenues_revenue_status_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_revenues
+    ADD CONSTRAINT project_revenues_revenue_status_id_fkey FOREIGN KEY (revenue_status_id) REFERENCES public.dictionaries(id);
+
+
+--
+-- Name: projects projects_accepted_for_evaluation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_accepted_for_evaluation_id_fkey FOREIGN KEY (accepted_for_evaluation_id) REFERENCES public.dictionaries(id);
+
+
+--
+-- Name: projects projects_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id);
+
+
+--
+-- Name: projects projects_industry_manager_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_industry_manager_id_fkey FOREIGN KEY (industry_manager_id) REFERENCES public.users(id);
+
+
+--
+-- Name: projects projects_manager_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(id);
+
+
+--
+-- Name: projects projects_payment_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_payment_type_id_fkey FOREIGN KEY (payment_type_id) REFERENCES public.dictionaries(id);
+
+
+--
+-- Name: projects projects_segment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_segment_id_fkey FOREIGN KEY (segment_id) REFERENCES public.dictionaries(id);
+
+
+--
+-- Name: projects projects_service_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.dictionaries(id);
+
+
+--
+-- Name: projects projects_stage_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.dictionaries(id);
+
+
+--
+-- Name: projects projects_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id);
+
+
+--
+-- Name: user_dashboards user_dashboards_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_dashboards
+    ADD CONSTRAINT user_dashboards_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: user_reports user_reports_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.user_reports
+    ADD CONSTRAINT user_reports_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: users users_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.user_roles(id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
