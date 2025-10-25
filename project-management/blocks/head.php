@@ -44,27 +44,37 @@ $baseUrl = ''; // Оставляем пустым для относительн�
             padding: 0.5rem 0;
         }
         
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 700;
-            font-size: 1.25rem;
-            white-space: nowrap;
-        }
-        
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #7700FF;
-            font-weight: bold;
-            flex-shrink: 0;
-        }
+.logo-image {
+    height: 100px; /* было 40px */
+    width: auto;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+/* Адаптивность для логотипа */
+@media (max-width: 1024px) {
+    .logo-image {
+        height: 45px; /* добавлен промежуточный размер */
+    }
+}
+
+@media (max-width: 768px) {
+    .logo-image {
+        height: 40px; /* было 35px */
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-image {
+        height: 35px; /* было 30px */
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-image {
+        height: 50px;
+    }
+}
         
         nav ul {
             display: flex;
@@ -215,7 +225,7 @@ $baseUrl = ''; // Оставляем пустым для относительн�
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    <div class="logo-icon">РТК</div>
+                    <img src="img/RGB_RT_logo-vertical_black_en.svg" alt="Ростелеком" class="logo-image">
                     <span>Управление проектами</span>
                 </div>
                 <nav>

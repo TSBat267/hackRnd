@@ -9,7 +9,6 @@ Auth::requireAuth();
 try {
     $conn = Database::connect();
 
-<<<<<<< HEAD
     // Общее количество проектов
     $total_projects_result = pg_query($conn, "SELECT COUNT(*) as count FROM projects");
     $total_projects = pg_fetch_assoc($total_projects_result)['count'];
@@ -67,7 +66,7 @@ try {
         ORDER BY created_at DESC 
         LIMIT 10
     ");
-=======
+
     // Основные метрики
     $stats_query = "
         SELECT 
@@ -165,7 +164,6 @@ try {
         LIMIT 10
     ";
     $recent_projects_result = pg_query($conn, $recent_projects_query);
->>>>>>> cee8816 (gesrg)
     $recent_projects = pg_fetch_all($recent_projects_result) ?: [];
 
 } catch (Exception $e) {

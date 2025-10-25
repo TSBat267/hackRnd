@@ -191,39 +191,47 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <style>
+        .container {
+            max-width: 1600px !important;
+        }
+
         .reports-layout {
             display: grid;
-            grid-template-columns: 400px 1fr;
-            gap: 2rem;
+            grid-template-columns: 450px 1fr;
+            gap: 2.5rem;
             margin-top: 2rem;
         }
         
         .saved-reports-sidebar {
             background: white;
             border-radius: var(--radius);
-            padding: 1.5rem;
+            padding: 2rem;
             box-shadow: var(--shadow);
-            max-height: 600px;
+            max-height: 700px;
             overflow-y: auto;
         }
         
         .saved-reports-sidebar h3 {
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             color: var(--dark);
+            font-size: 1.3rem;
         }
         
         .report-item {
-            padding: 1rem;
+            padding: 1.25rem;
             border: 1px solid var(--gray-light);
             border-radius: var(--radius);
-            margin-bottom: 0.75rem;
+            margin-bottom: 1rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            background: #fafafa;
         }
         
         .report-item:hover {
             border-color: var(--primary);
             background: var(--light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
         .report-item.active {
@@ -235,48 +243,55 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            gap: 1rem;
         }
         
         .report-name {
             font-weight: 600;
             color: var(--dark);
+            font-size: 1.1rem;
+            flex: 1;
         }
         
         .report-date {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: var(--gray);
+            white-space: nowrap;
         }
         
         .report-actions {
             display: flex;
-            gap: 0.25rem;
-            margin-top: 0.5rem;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
         }
         
         .btn-small {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 6px;
         }
         
         .import-section {
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
             border-top: 1px solid var(--gray-light);
         }
         
         .file-upload {
             border: 2px dashed var(--gray-light);
             border-radius: var(--radius);
-            padding: 1.5rem;
+            padding: 2rem;
             text-align: center;
             margin-bottom: 1rem;
             cursor: pointer;
             transition: border-color 0.3s ease;
+            background: #fafafa;
         }
         
         .file-upload:hover {
             border-color: var(--primary);
+            background: #f0f8ff;
         }
         
         .file-upload input {
@@ -284,36 +299,227 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
         }
         
         .upload-icon {
-            font-size: 2rem;
+            font-size: 2.5rem;
             color: var(--gray);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Основной контент */
+        .main-content-grid {
+            display: grid;
+            grid-template-columns: 500px 1fr;
+            gap: 2.5rem;
+            min-height: 800px;
         }
         
-        /* Остальные стили из предыдущей версии */
         .report-config {
             background: white;
             border-radius: var(--radius);
-            padding: 1.5rem;
+            padding: 2rem;
             box-shadow: var(--shadow);
+            height: fit-content;
         }
         
         .config-section {
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .config-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .config-section h3 {
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+            font-size: 1.3rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 0.875rem;
+            border: 1px solid var(--gray-light);
+            border-radius: var(--radius);
+            font-size: 1rem;
         }
         
         .fields-selector {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            max-height: 400px;
+            gap: 1.5rem;
+            max-height: 450px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #fafafa;
+            border-radius: var(--radius);
+        }
+        
+        .available-fields, .selected-fields {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--gray-light);
+        }
+        
+        .available-fields h4, .selected-fields h4 {
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+        
+        .field-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .field-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-light);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .field-item:hover {
+            background: var(--light);
+            border-color: var(--primary);
+        }
+        
+        .selected-list {
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .selected-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--light);
+            border: 1px solid var(--primary-light);
+            border-radius: 6px;
+            color: var(--primary);
+            font-weight: 500;
+        }
+        
+        .remove-field {
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .remove-field:hover {
+            background: var(--danger);
+            color: white;
         }
         
         .filter-row {
             display: grid;
-            grid-template-columns: 1fr 120px 1fr 40px;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
+            grid-template-columns: 1fr 140px 1fr 50px;
+            gap: 1rem;
+            margin-bottom: 1rem;
             align-items: center;
+            padding: 1rem;
+            background: #fafafa;
+            border-radius: var(--radius);
+        }
+        
+        .filter-row select,
+        .filter-row input {
+            padding: 0.75rem;
+            border: 1px solid var(--gray-light);
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+        }
+        
+        .remove-filter {
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        .remove-filter:hover {
+            background: #dc2626;
+        }
+        
+        #add-filter {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .export-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .radio {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            border: 1px solid var(--gray-light);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .radio:hover {
+            border-color: var(--primary);
+            background: var(--light);
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--gray-light);
+            gap: 1rem;
+        }
+        
+        .form-actions > div {
+            display: flex;
+            gap: 1rem;
         }
         
         .report-preview {
@@ -321,18 +527,101 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
             border-radius: var(--radius);
             box-shadow: var(--shadow);
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: fit-content;
+        }
+        
+        .preview-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
+        }
+        
+        .preview-header h3 {
+            margin: 0;
+            color: var(--dark);
+            font-size: 1.3rem;
+        }
+        
+        .preview-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .preview-content {
+            flex: 1;
+            overflow: auto;
+            min-height: 600px;
         }
         
         .preview-table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 0.95rem;
         }
         
-        .preview-table th,
-        .preview-table td {
-            padding: 0.75rem;
+        .preview-table th {
+            background: var(--light);
+            padding: 1.25rem;
             text-align: left;
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 2px solid var(--gray-light);
+            white-space: nowrap;
+        }
+        
+        .preview-table td {
+            padding: 1rem 1.25rem;
             border-bottom: 1px solid var(--gray-light);
+            vertical-align: top;
+        }
+        
+        .preview-table tr:hover {
+            background: #f8fafc;
+        }
+        
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--gray);
+        }
+        
+        .empty-state h4 {
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 1400px) {
+            .reports-layout {
+                grid-template-columns: 400px 1fr;
+                gap: 2rem;
+            }
+            
+            .main-content-grid {
+                grid-template-columns: 450px 1fr;
+                gap: 2rem;
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .reports-layout {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .main-content-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .saved-reports-sidebar {
+                max-height: 300px;
+            }
         }
     </style>
 </head>
@@ -361,7 +650,7 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
             <div class="reports-layout">
                 <!-- Боковая панель с сохраненными отчетами -->
                 <div class="saved-reports-sidebar">
-                    <h3>Мои отчеты</h3>
+                    <h3>📊 Мои отчеты</h3>
                     
                     <?php if (!empty($user_reports)): ?>
                         <?php foreach ($user_reports as $report): ?>
@@ -382,26 +671,26 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
                                     <form method="POST" style="display: inline;" onsubmit="return confirm('Удалить этот отчет?')">
                                         <input type="hidden" name="report_id" value="<?= $report['id'] ?>">
                                         <button type="submit" name="delete_report" class="btn-small btn-danger" title="Удалить отчет">
-                                            🗑️
+                                            🗑️ Удалить
                                         </button>
                                     </form>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <div style="text-align: center; color: var(--gray); padding: 2rem;">
-                            Нет сохраненных отчетов
+                        <div style="text-align: center; color: var(--gray); padding: 3rem;">
+                            📝 Нет сохраненных отчетов
                         </div>
                     <?php endif; ?>
                     
                     <!-- Импорт отчетов -->
                     <div class="import-section">
-                        <h4>Импорт отчета</h4>
+                        <h4>📁 Импорт отчета</h4>
                         <form method="POST" enctype="multipart/form-data" id="import-form">
                             <div class="file-upload" onclick="document.getElementById('report_file').click()">
                                 <div class="upload-icon">📁</div>
                                 <div>Нажмите для выбора файла отчета</div>
-                                <div style="font-size: 0.8rem; color: var(--gray); margin-top: 0.5rem;">
+                                <div style="font-size: 0.85rem; color: var(--gray); margin-top: 0.75rem;">
                                     Поддерживаемый формат: .rtkreport
                                 </div>
                             </div>
@@ -412,11 +701,11 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
                 </div>
 
                 <!-- Основной контент -->
-                <div style="display: grid; grid-template-columns: 400px 1fr; gap: 2rem;">
+                <div class="main-content-grid">
                     <div class="report-config">
                         <form method="POST" id="report-form">
                             <div class="config-section">
-                                <h3>Параметры отчета</h3>
+                                <h3>⚙️ Параметры отчета</h3>
                                 
                                 <div class="form-group">
                                     <label>Название отчета</label>
@@ -450,7 +739,7 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
                             </div>
 
                             <div class="config-section">
-                                <h3>Фильтры</h3>
+                                <h3>🔍 Фильтры</h3>
                                 <div class="filters-container" id="filters-container">
                                     <!-- Фильтры будут добавляться динамически -->
                                 </div>
@@ -458,25 +747,25 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
                             </div>
 
                             <div class="config-section">
-                                <h3>Настройки экспорта</h3>
+                                <h3>📤 Настройки экспорта</h3>
                                 <div class="export-options">
                                     <label class="radio">
                                         <input type="radio" name="export_format" value="excel" 
                                                <?= ($export_format ?? 'excel') === 'excel' ? 'checked' : '' ?>>
                                         <span class="radiomark"></span>
-                                        Excel
+                                        📊 Excel
                                     </label>
                                     <label class="radio">
                                         <input type="radio" name="export_format" value="pdf"
                                                <?= ($export_format ?? 'excel') === 'pdf' ? 'checked' : '' ?>>
                                         <span class="radiomark"></span>
-                                        PDF
+                                        📄 PDF
                                     </label>
                                     <label class="radio">
                                         <input type="radio" name="export_format" value="csv"
                                                <?= ($export_format ?? 'excel') === 'csv' ? 'checked' : '' ?>>
                                         <span class="radiomark"></span>
-                                        CSV
+                                        📝 CSV
                                     </label>
                                 </div>
                             </div>
@@ -492,9 +781,8 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
                     </div>
 
                     <div class="report-preview">
-                        <!-- Предпросмотр отчета -->
                         <div class="preview-header">
-                            <h3>Предпросмотр отчета</h3>
+                            <h3>👁️ Предпросмотр отчета</h3>
                             <div class="preview-actions">
                                 <button type="submit" form="report-form" name="generate" class="btn btn-secondary">Обновить</button>
                                 <button type="submit" form="report-form" name="export" class="btn btn-primary">Экспорт</button>
@@ -539,7 +827,7 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
                                 </table>
                             <?php else: ?>
                                 <div class="empty-state">
-                                    <h4>Данные для отчета не выбраны</h4>
+                                    <h4>📋 Данные для отчета не выбраны</h4>
                                     <p>Выберите поля и настройте фильтры для генерации отчета</p>
                                 </div>
                             <?php endif; ?>
@@ -621,7 +909,7 @@ if (isset($_POST['generate']) || isset($_POST['export'])) {
                     <option value=">=">больше или равно</option>
                 </select>
                 <input type="text" name="filters[${index}][value]" placeholder="Значение" value="${filterData ? filterData.value : ''}">
-                <button type="button" class="btn-icon btn-danger remove-filter">×</button>
+                <button type="button" class="remove-filter">×</button>
             `;
             
             // Устанавливаем значения если есть данные
