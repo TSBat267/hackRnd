@@ -53,7 +53,7 @@
 </head>
 <body>
     <!-- Header -->
-    <?php require_once 'header.php'; ?>
+    <?php require_once 'blocks/header.php'; ?>
 
 
     <!-- Hero Section -->

@@ -37,7 +37,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Аналитика - Ростелеком</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         .analytics-grid {
             display: grid;
@@ -302,7 +302,7 @@ try {
 </head>
 <body>
     <!-- Header -->
-    <?php require_once 'header.php'; ?>
+    <?php require_once 'blocks/header.php'; ?>
 
     <!-- Page Header -->
     <section class="page-header">
