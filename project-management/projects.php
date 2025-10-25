@@ -5,30 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Реестр проектов - Ростелеком</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <div class="logo-icon">РТК</div>
-                    <span>Управление проектами</span>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="index.html">Дашборд</a></li>
-                        <li><a href="projects.html" class="active">Проекты</a></li>
-                        <li><a href="reports.html">Отчеты</a></li>
-                        <li><a href="analytics.html">Аналитика</a></li>
-                    </ul>
-                </nav>
-                <div class="user-menu">
-                    <div class="user-avatar">ИИ</div>
-                </div>
-            </div>
-        </div>
-    </header>
+    <?php require_once 'header.php'; ?>
+
 
     <section class="page-header">
         <div class="container">

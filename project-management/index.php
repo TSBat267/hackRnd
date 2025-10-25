@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ростелеком - Управление проектами</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         /* Дополнительные стили для интерактивных элементов */
         .project-row {
@@ -53,27 +53,8 @@
 </head>
 <body>
     <!-- Header -->
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <div class="logo-icon">РТК</div>
-                    <span>Управление проектами</span>
-                </div>
-                <nav>
-                    <ul>
-                        <li><a href="index.html" class="active">Дашборд</a></li>
-                        <li><a href="projects.html">Проекты</a></li>
-                        <li><a href="reports.html">Отчеты</a></li>
-                        <li><a href="analytics.html">Аналитика</a></li>
-                    </ul>
-                </nav>
-                <div class="user-menu">
-                    <div class="user-avatar">ИИ</div>
-                </div>
-            </div>
-        </div>
-    </header>
+    <?php require_once 'header.php'; ?>
+
 
     <!-- Hero Section -->
     <section class="hero">
