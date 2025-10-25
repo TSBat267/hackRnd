@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <?php require_once 'blocks/header.php'; ?>
+    <?php require_once 'blocks/head.php'; ?>
 
 
     <section class="page-header">

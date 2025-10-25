@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <?php require_once 'blocks/header.php'; ?>
+    <?php require_once 'blocks/head.php'; ?>
 
 
     <section class="page-header">
@@ -57,7 +57,7 @@
                 </div>
             <div class="actions">
                 <button class="btn btn-secondary">Сбросить фильтры</button>
-                <a href="project-create.html" class="btn btn-primary">
+                <a href="project-create.php" class="btn btn-primary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M12 4V20M20 12H4" stroke="currentColor" stroke-width="2"/>
                     </svg>

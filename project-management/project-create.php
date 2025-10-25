@@ -309,7 +309,7 @@
 </head>
 <body>
     <!-- Header -->
-    <?php require_once 'blocks/header.php'; ?>
+    <?php require_once 'blocks/head.php'; ?>
 
 
     <!-- Create Header -->
@@ -317,7 +317,7 @@
         <div class="container">
             <div class="page-header-content">
                 <div class="back-link">
-                    <a href="projects.html">← Назад к реестру проектов</a>
+                    <a href="projects.php">← Назад к реестру проектов</a>
                 </div>
                 <h1>Создание нового проекта</h1>
                 <p>Заполните информацию о новом проекте коммерческого подразделения</p>
@@ -913,7 +913,7 @@
                 // Имитация отправки на сервер
                 setTimeout(() => {
                     alert('Проект успешно создан!');
-                    window.location.href = 'projects.html';
+                    window.location.href = 'projects.php';
                 }, 1000);
             }
         });

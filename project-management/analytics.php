@@ -302,7 +302,7 @@ try {
 </head>
 <body>
     <!-- Header -->
-    <?php require_once 'blocks/header.php'; ?>
+    <?php require_once 'blocks/head.php'; ?>
 
     <!-- Page Header -->
     <section class="page-header">
@@ -586,7 +586,7 @@ try {
                     <h3 class="analytics-title">Детальные данные по проектам</h3>
                     <div class="analytics-filters">
                         <button class="btn btn-secondary">Фильтры</button>
-                        <button class="btn btn-primary" onclick="location.href='reports.html'">Экспорт</button>
+                        <button class="btn btn-primary" onclick="location.href='reports.php'">Экспорт</button>
                     </div>
                 </div>
                 <div class="table-responsive">

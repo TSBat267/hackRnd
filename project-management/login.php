@@ -752,7 +752,7 @@
         document.getElementById('two-factor-form').addEventListener('submit', function(e) {
             e.preventDefault();
             // В реальном приложении здесь будет проверка кода
-            window.location.href = 'index.html';
+            window.location.href = 'index.php';
         });
 
         document.getElementById('register-form').addEventListener('submit', function(e) {

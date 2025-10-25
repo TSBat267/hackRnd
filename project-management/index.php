@@ -53,7 +53,7 @@
 </head>
 <body>
     <!-- Header -->
-    <?php require_once 'blocks/header.php'; ?>
+    <?php require_once 'blocks\head.php'; ?>
 
 
     <!-- Hero Section -->
@@ -62,13 +62,13 @@
             <h1>Управление проектами коммерческого подразделения</h1>
             <p>Единая платформа для сбора, обработки и анализа информации по количеству и качеству проектов с прогностическо-аналитическим модулем</p>
             <div class="hero-buttons">
-                <a href="project-card.html" class="btn btn-primary">
+                <a href="project-card.php" class="btn btn-primary">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 4V20M20 12H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     Создать проект
                 </a>
-                <a href="analytics.html" class="btn btn-secondary">
+                <a href="analytics.php" class="btn btn-secondary">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -84,7 +84,7 @@
             <div class="section-header">
                 <h2 class="section-title">Обзор проектов</h2>
                 <div class="filters">
-                    <select onchange="location.href='projects.html'">
+                    <select onchange="location.href='projects.php'">
                         <option>Все проекты</option>
                         <option>Активные</option>
                         <option>Завершенные</option>
@@ -94,7 +94,7 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card" onclick="location.href='projects.html'">
+                <div class="stat-card" onclick="location.href='projects.php'">
                     <div class="stat-value">142</div>
                     <div class="stat-label">Всего проектов</div>
                     <div class="stat-trend trend-up">
@@ -104,7 +104,7 @@
                         +12% с прошлого месяца
                     </div>
                 </div>
-                <div class="stat-card" onclick="location.href='analytics.html'">
+                <div class="stat-card" onclick="location.href='analytics.php'">
                     <div class="stat-value">₽24.8М</div>
                     <div class="stat-label">Общая выручка</div>
                     <div class="stat-trend trend-up">
@@ -114,7 +114,7 @@
                         +8% с прошлого месяца
                     </div>
                 </div>
-                <div class="stat-card" onclick="location.href='analytics.html'">
+                <div class="stat-card" onclick="location.href='analytics.php'">
                     <div class="stat-value">87%</div>
                     <div class="stat-label">Средняя вероятность</div>
                     <div class="stat-trend trend-down">
@@ -124,7 +124,7 @@
                         -2% с прошлого месяца
                     </div>
                 </div>
-                <div class="stat-card" onclick="location.href='projects.html?filter=new'">
+                <div class="stat-card" onclick="location.href='projects.php?filter=new'">
                     <div class="stat-value">32</div>
                     <div class="stat-label">Новых в этом месяце</div>
                     <div class="stat-trend trend-up">
@@ -137,7 +137,7 @@
             </div>
 
             <div class="charts-grid">
-                <div class="chart-card" onclick="location.href='analytics.html'">
+                <div class="chart-card" onclick="location.href='analytics.php'">
                     <div class="chart-header">
                         <h3 class="chart-title">Динамика проектов по этапам</h3>
                         <select>
@@ -156,7 +156,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="chart-card" onclick="location.href='analytics.html'">
+                <div class="chart-card" onclick="location.href='analytics.php'">
                     <div class="chart-header">
                         <h3 class="chart-title">Распределение по услугам</h3>
                         <select>
@@ -187,7 +187,7 @@
                             </svg>
                             <input type="text" placeholder="Поиск проектов...">
                         </div>
-                        <a href="reports.html" class="btn btn-primary">Экспорт</a>
+                        <a href="reports.php" class="btn btn-primary">Экспорт</a>
                     </div>
                 </div>
                 <table>
@@ -202,7 +202,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="project-row" onclick="location.href='project-card.html'">
+                        <tr class="project-row" onclick="location.href='project-card.php'">
                             <td class="project-name">
                                 Волна Коммуникаций
                                 <span class="new-badge" style="background: var(--success); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: 8px;">Новый</span>
@@ -221,7 +221,7 @@
                             <td><span class="status-badge status-pending">В работе</span></td>
                             <td>₽484,100</td>
                         </tr>
-                        <tr class="project-row" onclick="location.href='project-card.html'">
+                        <tr class="project-row" onclick="location.href='project-card.php'">
                             <td class="project-name">Цифровой Мост</td>
                             <td class="project-manager">
                                 <div class="manager-avatar">СС</div>
@@ -237,7 +237,7 @@
                             <td><span class="status-badge status-completed">Завершен</span></td>
                             <td>₽2,477,000</td>
                         </tr>
-                        <tr class="project-row" onclick="location.href='project-card.html'">
+                        <tr class="project-row" onclick="location.href='project-card.php'">
                             <td class="project-name">Сеть Будущего</td>
                             <td class="project-manager">
                                 <div class="manager-avatar">КК</div>
@@ -253,7 +253,7 @@
                             <td><span class="status-badge status-active">Активный</span></td>
                             <td>₽42,000</td>
                         </tr>
-                        <tr class="project-row" onclick="location.href='project-card.html'">
+                        <tr class="project-row" onclick="location.href='project-card.php'">
                             <td class="project-name">Эхо Соединения</td>
                             <td class="project-manager">
                                 <div class="manager-avatar">ПП</div>
@@ -269,7 +269,7 @@
                             <td><span class="status-badge status-active">Активный</span></td>
                             <td>₽1,517,000</td>
                         </tr>
-                        <tr class="project-row" onclick="location.href='project-card.html'">
+                        <tr class="project-row" onclick="location.href='project-card.php'">
                             <td class="project-name">Голос Онлайн</td>
                             <td class="project-manager">
                                 <div class="manager-avatar">ВВ</div>
@@ -303,7 +303,7 @@
             <div class="quick-actions">
                 <h3 class="section-title">Быстрые действия</h3>
                 <div class="actions-grid">
-                    <div class="action-card" onclick="location.href='project-card.html'">
+                    <div class="action-card" onclick="location.href='project-card.php'">
                         <div class="action-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 4V20M20 12H4" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -312,7 +312,7 @@
                         <h4>Создать проект</h4>
                         <p>Добавить новый проект в систему</p>
                     </div>
-                    <div class="action-card" onclick="location.href='reports.html'">
+                    <div class="action-card" onclick="location.href='reports.php'">
                         <div class="action-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M9 17L9 12M12 17L12 7M15 17L15 14M6 21H18C18.5304 21 19.0391 20.7893 19.4142 20.4142C19.7893 20.0391 20 19.5304 20 19V5C20 4.46957 19.7893 3.96086 19.4142 3.58579C19.0391 3.21071 18.5304 3 18 3H6C5.46957 3 4.96086 3.21071 4.58579 3.58579C4.21071 3.96086 4 4.46957 4 5V19C4 19.5304 4.21071 20.0391 4.58579 20.4142C4.96086 20.7893 5.46957 21 6 21Z" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -321,7 +321,7 @@
                         <h4>Создать отчет</h4>
                         <p>Сгенерировать пользовательский отчет</p>
                     </div>
-                    <div class="action-card" onclick="location.href='dictionaries.html'">
+                    <div class="action-card" onclick="location.href='dictionaries.php'">
                         <div class="action-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 6.25278V19.2528M12 6.25278C10.8321 5.47686 9.24649 5 7.5 5C5.75351 5 4.16789 5.47686 3 6.25278V19.2528C4.16789 18.4769 5.75351 18 7.5 18C9.24649 18 10.8321 18.4769 12 19.2528M12 6.25278C13.1679 5.47686 14.7535 5 16.5 5C18.2465 5 19.8321 5.47686 21 6.25278V19.2528C19.8321 18.4769 18.2465 18 16.5 18C14.7535 18 13.1679 18.4769 12 19.2528" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -330,7 +330,7 @@
                         <h4>Справочники</h4>
                         <p>Управление справочными данными</p>
                     </div>
-                    <div class="action-card" onclick="location.href='analytics.html'">
+                    <div class="action-card" onclick="location.href='analytics.php'">
                         <div class="action-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M9 19V13M15 19V9M3 21H21M5 19V11C5 10.4477 5.44772 10 6 10H9C9.55228 10 10 10.4477 10 11V19C10 19.5523 9.55228 20 9 20H6C5.44772 20 5 19.5523 5 19ZM14 19V7C14 6.44772 14.4477 6 15 6H18C18.5523 6 19 6.44772 19 7V19C19 19.5523 18.5523 20 18 20H15C14.4477 20 14 19.5523 14 19Z" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -415,7 +415,7 @@
             // Обработчики для строк таблицы
             document.querySelectorAll('.project-row').forEach(row => {
                 row.addEventListener('click', function() {
-                    window.location.href = 'project-card.html';
+                    window.location.href = 'project-card.php';
                 });
             });
 
@@ -431,7 +431,7 @@
             // Обработчики для карточек графиков
             document.querySelectorAll('.chart-card').forEach(card => {
                 card.addEventListener('click', function() {
-                    window.location.href = 'analytics.html';
+                    window.location.href = 'analytics.php';
                 });
             });
 

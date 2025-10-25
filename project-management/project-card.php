@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <?php require_once 'blocks/header.php'; ?>
+    <?php require_once 'blocks/head.php'; ?>
 
 
     <section class="page-header">
         <div class="container">
             <div class="page-header-content">
                 <div class="back-link">
-                    <a href="projects.html">← Назад к реестру проектов</a>
+                    <a href="projects.php">← Назад к реестру проектов</a>
                 </div>
                 <div class="page-title-row">
                     <h1>Волна Коммуникаций</h1>
