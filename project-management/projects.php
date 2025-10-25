@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реестр проектов - Ростелеком</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">РТК</div>
+                    <span>Управление проектами</span>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="index.html">Дашборд</a></li>
+                        <li><a href="projects.html" class="active">Проекты</a></li>
+                        <li><a href="reports.html">Отчеты</a></li>
+                        <li><a href="analytics.html">Аналитика</a></li>
+                    </ul>
+                </nav>
+                <div class="user-menu">
+                    <div class="user-avatar">ИИ</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="page-header">
+        <div class="container">
+            <div class="page-header-content">
+                <h1>Реестр проектов</h1>
+                <p>Полный список всех проектов коммерческого подразделения</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="projects-section">
+        <div class="container">
+            <div class="section-toolbar">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Этап проекта:</label>
+                        <select>
+                            <option>Все этапы</option>
+                            <option>Лид</option>
+                            <option>Проработка лида</option>
+                            <option>КП</option>
+                            <option>Пилот</option>
+                            <option>Выделение финансирования</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Услуга:</label>
+                        <select>
+                            <option>Все услуги</option>
+                            <option>Интернет</option>
+                            <option>Телефония</option>
+                            <option>Инфобез</option>
+                            <option>Цифровые сервисы</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Менеджер:</label>
+                        <select>
+                            <option>Все менеджеры</option>
+                            <option>Иванов И.</option>
+                            <option>Смирнов С.</option>
+                            <option>Кузнецов К.</option>
+                        </select>
+                    </div>
+                </div>
+            <div class="actions">
+                <button class="btn btn-secondary">Сбросить фильтры</button>
+                <a href="project-create.html" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 4V20M20 12H4" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Новый проект
+                </a>
+            </div>
+            </div>
+
+            <div class="projects-table">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="select-all">
+                                </th>
+                                <th>Название проекта</th>
+                                <th>Организация</th>
+                                <th>ИНН</th>
+                                <th>Услуга</th>
+                                <th>Менеджер</th>
+                                <th>Этап</th>
+                                <th>Вероятность</th>
+                                <th>Выручка</th>
+                                <th>Дата создания</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="project-row new-project">
+                                <td><input type="checkbox"></td>
+                                <td>
+                                    <div class="project-name">
+                                        Волна Коммуникаций
+                                        <span class="new-badge">Новый</span>
+                                    </div>
+                                </td>
+                                <td>Альфа-Рост</td>
+                                <td>123456789012</td>
+                                <td>Телефония</td>
+                                <td>
+                                    <div class="project-manager">
+                                        <div class="manager-avatar">ИИ</div>
+                                        Иванов И.
+                                    </div>
+                                </td>
+                                <td>Проработка лида</td>
+                                <td>
+                                    <div class="progress-cell">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 20%"></div>
+                                        </div>
+                                        <span>20%</span>
+                                    </div>
+                                </td>
+                                <td>₽484,100</td>
+                                <td>19.07.2025</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-icon" title="Редактировать">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                                <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" stroke-width="2"/>
+                                                <path d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10217 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" stroke-width="2"/>
+                                            </svg>
+                                        </button>
+                                        <button class="btn-icon" title="Удалить">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                                <path d="M3 6H5H21" stroke="currentColor" stroke-width="2"/>
+                                                <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" stroke-width="2"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Другие строки таблицы -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="table-footer">
+                    <div class="table-info">
+                        Показано 25 из 142 проектов
+                    </div>
+                    <div class="pagination">
+                        <button class="page-btn">←</button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                        <button class="page-btn">...</button>
+                        <button class="page-btn">6</button>
+                        <button class="page-btn">→</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <!-- Футер как в главной странице -->
+    </footer>
+</body>
+</html>
